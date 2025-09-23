@@ -39,13 +39,12 @@ npm install
 ```
 4. Set up environment variables (create a .env file):
 ```
-NEXT_PUBLIC_SUPABASE_URL= URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY= KEY
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 ```
 5. Start the development server:
 ```
-npm run build
-npm run start
+npm run dev
 ```
 6. Open the application in your browser:
 ```
