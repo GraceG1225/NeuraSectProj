@@ -39,9 +39,11 @@ npm install
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 ```
-In Supabase, click the Connect button in the top navigation bar.
+In Supabase, click the Project Settings button.
 
-Open the App Frameworks tab, choose Next.js, and you’ll see your project’s URL and API key.
+Click on Data API to find the Project URL.
+
+Click on API Keys to find the publishable and secret keys.
 
 5. Start the development server:
 ```
