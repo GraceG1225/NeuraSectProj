@@ -1,11 +1,11 @@
 import { supabase } from '../../lib/supabaseClient';
 
 interface Props {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 export default async function DatasetPage({ params }: Props) {
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabase
         .from('datasets')
