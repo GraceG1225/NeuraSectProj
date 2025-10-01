@@ -19,15 +19,13 @@ export default function Home() {
     }, []);
 
   return (
-    <body>
-      <h1>
-        Datasets:
-      </h1>
-      <ul className="mt-4 space-y-2">
-        {datasets.map((dataset) => (
-          <li key={dataset.id}>{dataset.title}</li>
-        ))}
-      </ul>
-    </body>
+    <div>
+      <h1> Datasets:</h1>
+        <ul className="mt-4 space-y-2">
+            {datasets.map((dataset) => (
+            <li key={dataset.id}>{dataset.title}</li>
+          ))}
+        </ul>
+    </div>
   );
 }
