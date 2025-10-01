@@ -17,7 +17,7 @@ export default async function DatasetPage({ params }: Props) {
     return <div>Error: {error.message}</div>;
 }
 
-    const tables = ['iris', 'boston', 'youtube'];
+    const tables = ['iris', 'boston', 'youtube', 'insurance'];
   
     const tableQueries = await Promise.all(
         tables.map(async (tableName) => {
