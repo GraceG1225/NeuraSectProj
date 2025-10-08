@@ -252,8 +252,3 @@ body {
 .badge-error {
   @apply bg-red-100 text-red-800;
 }
-
-/* Legacy support */
-.centered-div {
-  @apply flex items-center justify-center mx-auto w-full max-w-md;
-}
