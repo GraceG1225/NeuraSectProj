@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -7,6 +8,11 @@ import Link from 'next/link';
 import { useEffect, useState } from "react";
 import Link from "next/link";
 >>>>>>> 28c9a9d (changes)
+=======
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+>>>>>>> 28c9a9de61245cca43f4cb0c7469640012651dae
 
 interface Dataset {
   id: string;
@@ -34,6 +40,7 @@ export default function Home() {
 
   return (
 <<<<<<< HEAD
+<<<<<<< HEAD
     <div className="centered-div">
       <h1 className="text-2xl">Datasets:</h1>
         <ul className="list-disc mt-4 space-y-2">
@@ -46,6 +53,8 @@ export default function Home() {
           ))}
         </ul>
 =======
+=======
+>>>>>>> 28c9a9de61245cca43f4cb0c7469640012651dae
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -382,7 +391,10 @@ export default function Home() {
           </div>
         </div>
       </section>
+<<<<<<< HEAD
 >>>>>>> 28c9a9d (changes)
+=======
+>>>>>>> 28c9a9de61245cca43f4cb0c7469640012651dae
     </div>
   );
 }
