@@ -1,6 +1,3 @@
-# NeuraSectProj
-This repository is intended to build an Interactive Neural Network Playground – a tool that will combine a training sandbox with a visualizer to make deep learning more transparent and educational. 
-
 <h3 align="center">NeuraSect</h3>
 
 <div align="center">
@@ -37,11 +34,17 @@ cd neurasect
 ```
 npm install
 ```
-4. Set up environment variables (create a .env file):
+4. Set up environment variables (create a .env file in the base folder):
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 ```
+In Supabase, click the Project Settings button.
+
+Click on Data API to find the Project URL.
+
+Click on API Keys to find the publishable and secret keys.
+
 5. Start the development server:
 ```
 npm run dev
