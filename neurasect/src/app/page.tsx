@@ -240,9 +240,6 @@ export default function Home() {
               <FaRegQuestionCircle />
               &nbsp;Learn the Basics
             </button>
-            <div className="bg-testcolor font-testfont">
-              Hello Tailwind
-            </div>
           </div>
         </div>
       </section>
