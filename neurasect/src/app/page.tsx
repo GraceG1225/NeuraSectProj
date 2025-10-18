@@ -39,7 +39,7 @@ export default function Home() {
             <div className="animate-fade-in">
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
                 Welcome to{" "}
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="gradient-text">
                   NeuraSect
                 </span>
               </h1>
@@ -240,6 +240,9 @@ export default function Home() {
               <FaRegQuestionCircle />
               &nbsp;Learn the Basics
             </button>
+            <div className="bg-testcolor font-testfont">
+              Hello Tailwind
+            </div>
           </div>
         </div>
       </section>
