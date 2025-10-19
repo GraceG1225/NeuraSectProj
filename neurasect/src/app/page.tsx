@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaCheckCircle, FaBook, FaLayerGroup, FaRegQuestionCircle, FaPlusCircle, FaFileAlt, FaRegLightbulb } from "react-icons/fa";
 import { FaBoltLightning } from "react-icons/fa6";
-import { IoIosArrowForward, IoIosRefresh } from "react-icons/io";
-import { IoBarChart } from "react-icons/io5";
+import { IoIosArrowForward, IoIosRefresh} from "react-icons/io";
 
 interface Dataset {
   id: string;
@@ -81,6 +80,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
+      {/* testing */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -94,7 +94,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="card card-hover p-8 text-center">
+            <div className="card card-hover p-10 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <div className="scale-150">
                   <FaRegLightbulb />
@@ -127,7 +127,7 @@ export default function Home() {
             <div className="card card-hover p-8 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <div className="scale-150">
-                  <IoBarChart />
+                  {/* <IoBarChart /> */}
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
@@ -272,8 +272,8 @@ export default function Home() {
             {/* Control Panel */}
             <div className="space-y-6">
               {/* Dataset Selection */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Dataset</h3>
+              <div className="card p-3">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Dataset</h3>
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">Select Dataset</label>
                   <select 
@@ -290,9 +290,9 @@ export default function Home() {
               </div>
 
               {/* Learning Rate */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Learning Rate</h3>
-                <div className="space-y-3">
+              <div className="card p-3">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Learning Rate</h3>
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>0.001</span>
                     <span className="font-medium">{learningRate}</span>
@@ -311,8 +311,8 @@ export default function Home() {
               </div>
 
               {/* Regularization Rate */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Regularization Rate</h3>
+              <div className="card p-3">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Regularization Rate</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>0.0001</span>
@@ -332,8 +332,8 @@ export default function Home() {
               </div>
 
               {/* Model Selection */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Model</h3>
+              <div className="card p-3">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Model</h3>
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">Select Model</label>
                   <select 
@@ -350,8 +350,8 @@ export default function Home() {
               </div>
 
               {/* Train/Test Split */}
-              <div className="card p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Train/Test Split</h3>
+              <div className="card p-3">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Train/Test Split</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm text-gray-600">
                     <span>60%</span>
