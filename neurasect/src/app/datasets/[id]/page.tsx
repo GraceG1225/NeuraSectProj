@@ -62,7 +62,7 @@ export default function DatasetPage() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Dataset Not Found</h1>
-        <p className="text-gray-500 mb-4">We couldn’t locate the dataset you’re looking for.</p>
+        <p className="text-gray-500 mb-4">We couldn&apos;t locate the dataset you&apos;re looking for.</p>
         <Link href="/" className="btn btn-primary px-6 py-3">
             <IoIosArrowBack className="inline-block mr-2" />
             Back to Home
