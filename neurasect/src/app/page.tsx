@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FaCheckCircle, FaBook, FaLayerGroup, FaRegQuestionCircle, FaPlusCircle, FaFileAlt, FaRegLightbulb } from "react-icons/fa";
 import { FaBoltLightning } from "react-icons/fa6";
 import { IoIosArrowForward, IoIosRefresh} from "react-icons/io";
+import { IoBarChart } from "react-icons/io5";
 
 interface Dataset {
   id: string;
@@ -127,7 +128,7 @@ export default function Home() {
             <div className="card card-hover p-8 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <div className="scale-150">
-                  {/* <IoBarChart /> */}
+                  <IoBarChart />
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
@@ -188,7 +189,7 @@ export default function Home() {
 
                   <p className="text-gray-600 mb-6">
                     Ready for machine learning experiments. Click to explore the
-                    data structure and start training your models.
+                    dataset.
                   </p>
 
                   <div className="flex items-center justify-between">
