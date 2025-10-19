@@ -281,10 +281,16 @@ export default function Home() {
                     onChange={(e) => setSelectedDataset(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="iris">Iris Dataset</option>
-                    <option value="mnist">MNIST</option>
-                    <option value="cifar10">CIFAR-10</option>
-                    <option value="custom">Custom Dataset</option>
+                  <option value="">Select a dataset</option>
+                  {datasets && datasets.length > 0 ? (
+                    datasets.map((dataset) => (
+                      <option key={dataset.id} value={dataset.id}>
+                        {dataset.title}
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>No datasets available</option>
+                  )}
                   </select>
                 </div>
               </div>
