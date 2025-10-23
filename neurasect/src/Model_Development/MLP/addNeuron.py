@@ -33,8 +33,9 @@ class MLP:
         self.num_of_layers = num_of_layers
         self.num_of_neurons_per_layer = np.array(num_of_neurons_per_layer)
     
-    def add_layer(self,layer_number,neurons,activation='relu'):
+    def add_layer(self,layer_number,neurons='2',activation='relu'):
         self.num_of_neurons_per_layer[layer_number-1] = neurons
+        self.num_of_layer +=1
         model.add(layers.Dense(neurons,activation)))
     def edit_layer(self,layer_number,neurons,activation='relu'):
         if layer_number !=1:
