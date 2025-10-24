@@ -252,20 +252,3 @@ body {
 .badge-error {
   @apply bg-red-100 text-red-800;
 }
-
-/* Custom slider styles - matching card p-6 design */
-.slider {
-  @apply w-full h-0.5 bg-gray-200 rounded-lg appearance-none cursor-pointer;
-}
-
-.slider::-webkit-slider-thumb {
-  @apply appearance-none h-2.5 w-2.5 bg-blue-600 rounded-full cursor-pointer shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-110;
-}
-
-.slider::-moz-range-thumb {
-  @apply h-2.5 w-2.5 bg-blue-600 rounded-full cursor-pointer border-0 shadow-sm transition-all duration-200 hover:bg-blue-700 hover:scale-110;
-}
-
-.slider:focus {
-  @apply outline-none ring-1 ring-blue-500/30;
-}

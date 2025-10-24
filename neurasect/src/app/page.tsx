@@ -343,7 +343,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Plot Area */}
             <div className="lg:col-span-2">
-              <div className="card p-6 h-96">
+              <div className="bg-blue-50 border border-gray-800 rounded-lg p-6 h-96">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-900">Training Progress</h3>
                   <div className="flex items-center space-x-2">
@@ -366,30 +366,27 @@ export default function Home() {
             </div>
 
             {/* Control Panel */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Dataset Selection */}
-              <div className="card p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Dataset</h3>
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">Select Dataset</label>
-                  <select 
-                    value={selectedDataset} 
-                    onChange={(e) => setSelectedDataset(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="iris">Iris Dataset</option>
-                    <option value="mnist">MNIST</option>
-                    <option value="cifar10">CIFAR-10</option>
-                    <option value="custom">Custom Dataset</option>
-                  </select>
-                </div>
+              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Dataset</h3>
+                <select 
+                  value={selectedDataset} 
+                  onChange={(e) => setSelectedDataset(e.target.value)}
+                  className="w-full px-2 py-1 text-sm border border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                >
+                  <option value="iris">Iris Dataset</option>
+                  <option value="mnist">MNIST</option>
+                  <option value="cifar10">CIFAR-10</option>
+                  <option value="custom">Custom Dataset</option>
+                </select>
               </div>
 
               {/* Learning Rate */}
-              <div className="card p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Learning Rate</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600">
+              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Learning Rate</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-gray-600">
                     <span>0.001</span>
                     <span className="font-medium">{learningRate}</span>
                     <span>0.1</span>
@@ -407,10 +404,10 @@ export default function Home() {
               </div>
 
               {/* Regularization Rate */}
-              <div className="card p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Regularization Rate</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600">
+              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Regularization Rate</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-gray-600">
                     <span>0.0001</span>
                     <span className="font-medium">{regularizationRate}</span>
                     <span>0.01</span>
@@ -428,28 +425,25 @@ export default function Home() {
               </div>
 
               {/* Model Selection */}
-              <div className="card p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Model</h3>
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">Select Model</label>
-                  <select 
-                    value={selectedModel} 
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="neural_network">Neural Network</option>
-                    <option value="cnn">Convolutional Neural Network</option>
-                    <option value="rnn">Recurrent Neural Network</option>
-                    <option value="transformer">Transformer</option>
-                  </select>
-                </div>
+              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Model</h3>
+                <select 
+                  value={selectedModel} 
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full px-2 py-1 text-sm border border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                >
+                  <option value="neural_network">Neural Network</option>
+                  <option value="cnn">Convolutional Neural Network</option>
+                  <option value="rnn">Recurrent Neural Network</option>
+                  <option value="transformer">Transformer</option>
+                </select>
               </div>
 
               {/* Train/Test Split */}
-              <div className="card p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Train/Test Split</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-gray-600">
+              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">Train/Test Split</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-gray-600">
                     <span>60%</span>
                     <span className="font-medium">{Math.round(trainTestSplit * 100)}%</span>
                     <span>90%</span>
