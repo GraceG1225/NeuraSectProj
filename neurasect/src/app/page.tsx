@@ -368,7 +368,7 @@ export default function Home() {
             {/* Control Panel */}
             <div className="space-y-6">
               {/* Dataset Selection */}
-              <div className="card p-6">
+              <div className="card p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Dataset</h3>
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">Select Dataset</label>
@@ -386,7 +386,7 @@ export default function Home() {
               </div>
 
               {/* Learning Rate */}
-              <div className="card p-6">
+              <div className="card p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Learning Rate</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm text-gray-600">
@@ -407,7 +407,7 @@ export default function Home() {
               </div>
 
               {/* Regularization Rate */}
-              <div className="card p-6">
+              <div className="card p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Regularization Rate</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm text-gray-600">
@@ -428,7 +428,7 @@ export default function Home() {
               </div>
 
               {/* Model Selection */}
-              <div className="card p-6">
+              <div className="card p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Model</h3>
                 <div className="space-y-3">
                   <label className="block text-sm font-medium text-gray-700">Select Model</label>
@@ -446,7 +446,7 @@ export default function Home() {
               </div>
 
               {/* Train/Test Split */}
-              <div className="card p-6">
+              <div className="card p-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Train/Test Split</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm text-gray-600">
