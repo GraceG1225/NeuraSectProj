@@ -100,6 +100,7 @@ export default function Home() {
         <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-pink-200 rounded-full opacity-20 animate-pulse delay-2000"></div>
       </section>
 
+
       {/* Features Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
@@ -187,6 +188,7 @@ export default function Home() {
                 Access a curated collection of datasets ready for machine
                 learning experiments and model training.
               </p>
+
             </div>
           </div>
         </div>
@@ -323,158 +325,26 @@ export default function Home() {
               </button>
             </div>
           )}
-        </div>
-      </section>
+                 </div>
+       </section>
 
-      //added: 
+       {/* Live Training Section */}
+       <section className="py-20 bg-gray-50">
+         <div className="container mx-auto px-4">
+           <div className="text-center mb-16">
+             <h2 className="text-4xl font-bold text-gray-900 mb-4">
+               Live Training Dashboard
+             </h2>
+             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+               Configure your model parameters and watch real-time training progress
+             </p>
+           </div>
+           
+           {/* Live Training Mock */}
+           <LiveTrainingMock />
+         </div>
+       </section>
 
-      {/* Live Training Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Live Training Dashboard
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Configure your model parameters and watch real-time training progress
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Plot Area */}
-            <div className="lg:col-span-2">
-              <div className="bg-blue-50 border border-gray-800 rounded-lg p-6 h-96">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-bold text-gray-900">Training Progress</h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-600">Live</span>
-                  </div>
-                </div>
-                
-                {/* Placeholder for plot */}
-                <div className="w-full h-80 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <div className="text-center">
-                    <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <p className="text-gray-500 text-lg">Live Plot Area</p>
-                    <p className="text-gray-400 text-sm">Training metrics will appear here</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Control Panel */}
-            <div className="space-y-4">
-              {/* Dataset Selection */}
-              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Dataset</h3>
-                <select 
-                  value={selectedDataset} 
-                  onChange={(e) => setSelectedDataset(e.target.value)}
-                  className="w-full px-2 py-1 text-sm border border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                >
-                  <option value="iris">Iris Dataset</option>
-                  <option value="mnist">MNIST</option>
-                  <option value="cifar10">CIFAR-10</option>
-                  <option value="custom">Custom Dataset</option>
-                </select>
-              </div>
-
-              {/* Learning Rate */}
-              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Learning Rate</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>0.001</span>
-                    <span className="font-medium">{learningRate}</span>
-                    <span>0.1</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.001"
-                    max="0.1"
-                    step="0.001"
-                    value={learningRate}
-                    onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-                    className="slider"
-                  />
-                </div>
-              </div>
-
-              {/* Regularization Rate */}
-              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Regularization Rate</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>0.0001</span>
-                    <span className="font-medium">{regularizationRate}</span>
-                    <span>0.01</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.0001"
-                    max="0.01"
-                    step="0.0001"
-                    value={regularizationRate}
-                    onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
-                    className="slider"
-                  />
-                </div>
-              </div>
-
-              {/* Model Selection */}
-              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Model</h3>
-                <select 
-                  value={selectedModel} 
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full px-2 py-1 text-sm border border-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-                >
-                  <option value="neural_network">Neural Network</option>
-                  <option value="cnn">Convolutional Neural Network</option>
-                  <option value="rnn">Recurrent Neural Network</option>
-                  <option value="transformer">Transformer</option>
-                </select>
-              </div>
-
-              {/* Train/Test Split */}
-              <div className="bg-blue-50 border border-gray-800 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-2">Train/Test Split</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>60%</span>
-                    <span className="font-medium">{Math.round(trainTestSplit * 100)}%</span>
-                    <span>90%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.6"
-                    max="0.9"
-                    step="0.05"
-                    value={trainTestSplit}
-                    onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
-                    className="slider"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Train: {Math.round(trainTestSplit * 100)}%</span>
-                    <span>Test: {Math.round((1 - trainTestSplit) * 100)}%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Start Training Button */}
-              <button className="w-full btn btn-primary py-3 text-lg font-semibold">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-8-8h8v8a4 4 0 01-8 0v-8z" />
-                </svg>
-                Start Training
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Call to Action Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
@@ -525,3 +395,176 @@ export default function Home() {
     </div>
   );
 }
+
+/**
+ * LiveTrainingMock
+ * ----------------------------------------------------------------------------
+ * This component reproduces the layout in your reference image exactly:
+ * - Fixed size canvas (984x505px)
+ * - Left panel: Dataset, Learning Rate, Regulation Rate, Model, Train/Test Split
+ * - Right panel: Large rounded "Live Plot Area"
+ *
+ * Styling uses Tailwind classes (configured via your global.css theme).
+ */
+function LiveTrainingMock() {
+  const [selectedDataset, setSelectedDataset] = useState<string>("");
+  const [learningRate, setLearningRate] = useState<number>(0.01);
+  const [regularizationRate, setRegularizationRate] = useState<number>(0.001);
+  const [selectedModel, setSelectedModel] = useState<string>("neural_network");
+  const [trainTestSplit, setTrainTestSplit] = useState<number>(0.8);
+
+  const formatNumber = (num: number) => num.toFixed(4);
+
+  return (
+    <section className="py-12 bg-white">
+      {/* Outer canvas matches reference image: 984 × 505 */}
+      <div className="mx-auto w-[984px] h-[505px] flex items-center justify-center">
+        <div className="flex items-center">
+          {/* LEFT COLUMN — 320px wide */}
+          <div className="w-[320px]">
+            <div className="space-y-[16px]">
+              {/* Dataset Selection */}
+              <div className="w-[320px] h-[72px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2">
+                <span className="text-base font-bold text-gray-900 mb-1">
+                  Dataset
+                </span>
+                <select
+                  value={selectedDataset}
+                  onChange={(e) => setSelectedDataset(e.target.value)}
+                  className="w-[280px] px-2 py-1 text-sm border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
+                >
+                  <option value="">Select dataset</option>
+                  <option value="iris">Iris Dataset</option>
+                  <option value="mnist">MNIST</option>
+                  <option value="cifar10">CIFAR-10</option>
+                  <option value="custom">Custom Dataset</option>
+                </select>
+              </div>
+
+              {/* Learning Rate */}
+              <div className="w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-between w-[280px] mb-1">
+                  <span className="text-base font-semibold text-gray-900">
+                    Learning Rate
+                  </span>
+                  <span className="text-sm font-bold text-gray-700">
+                    {learningRate.toFixed(3)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.001"
+                  max="0.1"
+                  step="0.001"
+                  value={learningRate}
+                  onChange={(e) => setLearningRate(parseFloat(e.target.value))}
+                  className="w-[220px] h-[3px] bg-gray-700 rounded mt-[6px] slider"
+                />
+              </div>
+
+              {/* Regulation Rate */}
+              <div className="w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-between w-[280px] mb-1">
+                  <span className="text-base font-semibold text-gray-900">
+                    Regulation Rate
+                  </span>
+                  <span className="text-sm font-bold text-gray-700">
+                    {regularizationRate.toFixed(4)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0001"
+                  max="0.01"
+                  step="0.0001"
+                  value={regularizationRate}
+                  onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
+                  className="w-[220px] h-[3px] bg-gray-700 rounded mt-[6px] slider"
+                />
+              </div>
+
+              {/* Model Selection */}
+              <div className="w-[320px] h-[64px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2">
+                <span className="text-base font-bold text-gray-900 mb-1">
+                  Model
+                </span>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-[280px] px-2 py-1 text-sm border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
+                >
+                  <option value="neural_network">Neural Network</option>
+                  <option value="cnn">Convolutional Neural Network</option>
+                  <option value="rnn">Recurrent Neural Network</option>
+                  <option value="transformer">Transformer</option>
+                </select>
+              </div>
+
+              {/* Train/Test Split */}
+              <div className="w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-between w-[280px] mb-1">
+                  <span className="text-base font-semibold text-gray-900">
+                    Train/Test Split
+                  </span>
+                  <span className="text-sm font-bold text-gray-700">
+                    {Math.round(trainTestSplit * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.6"
+                  max="0.9"
+                  step="0.05"
+                  value={trainTestSplit}
+                  onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
+                  className="w-[220px] h-[3px] bg-gray-700 rounded mt-[6px] slider"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Gutter — 24px gap between columns */}
+          <div className="w-[24px]" />
+
+          {/* RIGHT: Live Plot Area — 640 × 420 */}
+          <div className="w-[640px] h-[420px] bg-[#DBEAFE] border border-gray-800 rounded-[36px] flex flex-col">
+            {/* Header with Training Progress and Live indicator */}
+            <div className="flex items-center justify-between mb-4 p-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Training Progress
+              </h3>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-600">Live</span>
+              </div>
+            </div>
+
+            {/* Placeholder for plot */}
+            <div className="flex-1 mx-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+              <div className="text-center">
+                <svg
+                  className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                <p className="text-gray-500 text-lg">Live Plot Area</p>
+                <p className="text-gray-400 text-sm">
+                  Training metrics will appear here
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
