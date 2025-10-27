@@ -252,3 +252,66 @@ body {
 .badge-error {
   @apply bg-red-100 text-red-800;
 }
+
+/* Training Dashboard Controls */
+.dashboard-control-box {
+  @apply rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center;
+}
+
+.dashboard-control-box-small {
+  @apply w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center;
+}
+
+.dashboard-control-box-medium {
+  @apply w-[320px] h-[64px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2;
+}
+
+.dashboard-control-box-large {
+  @apply w-[320px] h-[72px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2;
+}
+
+.dashboard-label {
+  @apply text-base font-bold text-gray-900 mb-1;
+}
+
+.dashboard-label-small {
+  @apply text-base font-semibold text-gray-900;
+}
+
+.dashboard-control-header {
+  @apply flex items-center justify-between w-[280px] mb-1;
+}
+
+.dashboard-control-value {
+  @apply text-sm font-bold text-gray-700;
+}
+
+.dashboard-select {
+  @apply w-[280px] px-2 py-1 text-sm border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900;
+}
+
+.dashboard-slider {
+  @apply w-[220px] h-[3px] bg-gray-700 rounded mt-[6px];
+  appearance: none;
+  cursor: pointer;
+}
+
+.dashboard-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #374151;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dashboard-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #374151;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

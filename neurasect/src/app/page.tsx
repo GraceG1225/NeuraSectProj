@@ -424,14 +424,14 @@ function LiveTrainingMock() {
           <div className="w-[320px]">
             <div className="space-y-[16px]">
               {/* Dataset Selection */}
-              <div className="w-[320px] h-[72px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2">
-                <span className="text-base font-bold text-gray-900 mb-1">
+              <div className="dashboard-control-box-large">
+                <span className="dashboard-label">
                   Dataset
                 </span>
                 <select
                   value={selectedDataset}
                   onChange={(e) => setSelectedDataset(e.target.value)}
-                  className="w-[280px] px-2 py-1 text-sm border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
+                  className="dashboard-select"
                 >
                   <option value="">Select dataset</option>
                   <option value="iris">Iris Dataset</option>
@@ -442,12 +442,12 @@ function LiveTrainingMock() {
               </div>
 
               {/* Learning Rate */}
-              <div className="w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center">
-                <div className="flex items-center justify-between w-[280px] mb-1">
-                  <span className="text-base font-semibold text-gray-900">
+              <div className="dashboard-control-box-small">
+                <div className="dashboard-control-header">
+                  <span className="dashboard-label-small">
                     Learning Rate
                   </span>
-                  <span className="text-sm font-bold text-gray-700">
+                  <span className="dashboard-control-value">
                     {learningRate.toFixed(3)}
                   </span>
                 </div>
@@ -458,17 +458,17 @@ function LiveTrainingMock() {
                   step="0.001"
                   value={learningRate}
                   onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-                  className="w-[220px] h-[3px] bg-gray-700 rounded mt-[6px] slider"
+                  className="dashboard-slider"
                 />
               </div>
 
               {/* Regulation Rate */}
-              <div className="w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center">
-                <div className="flex items-center justify-between w-[280px] mb-1">
-                  <span className="text-base font-semibold text-gray-900">
+              <div className="dashboard-control-box-small">
+                <div className="dashboard-control-header">
+                  <span className="dashboard-label-small">
                     Regulation Rate
                   </span>
-                  <span className="text-sm font-bold text-gray-700">
+                  <span className="dashboard-control-value">
                     {regularizationRate.toFixed(4)}
                   </span>
                 </div>
@@ -479,19 +479,19 @@ function LiveTrainingMock() {
                   step="0.0001"
                   value={regularizationRate}
                   onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
-                  className="w-[220px] h-[3px] bg-gray-700 rounded mt-[6px] slider"
+                  className="dashboard-slider"
                 />
               </div>
 
               {/* Model Selection */}
-              <div className="w-[320px] h-[64px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2">
-                <span className="text-base font-bold text-gray-900 mb-1">
+              <div className="dashboard-control-box-medium">
+                <span className="dashboard-label">
                   Model
                 </span>
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-[280px] px-2 py-1 text-sm border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900"
+                  className="dashboard-select"
                 >
                   <option value="neural_network">Neural Network</option>
                   <option value="cnn">Convolutional Neural Network</option>
@@ -501,12 +501,12 @@ function LiveTrainingMock() {
               </div>
 
               {/* Train/Test Split */}
-              <div className="w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center">
-                <div className="flex items-center justify-between w-[280px] mb-1">
-                  <span className="text-base font-semibold text-gray-900">
+              <div className="dashboard-control-box-small">
+                <div className="dashboard-control-header">
+                  <span className="dashboard-label-small">
                     Train/Test Split
                   </span>
-                  <span className="text-sm font-bold text-gray-700">
+                  <span className="dashboard-control-value">
                     {Math.round(trainTestSplit * 100)}%
                   </span>
                 </div>
@@ -517,7 +517,7 @@ function LiveTrainingMock() {
                   step="0.05"
                   value={trainTestSplit}
                   onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
-                  className="w-[220px] h-[3px] bg-gray-700 rounded mt-[6px] slider"
+                  className="dashboard-slider"
                 />
               </div>
             </div>
