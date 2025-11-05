@@ -90,7 +90,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 {datasets?.length ? (
                   datasets.map((dataset) => (
                     <option key={dataset.id} value={dataset.id}>
-                      {dataset.title}
+                        {dataset.title} 
                     </option>
                   ))
                 ) : (
@@ -151,7 +151,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <h3 className="text-base font-bold text-gray-900 mb-2">Learning Rate</h3>
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>0.001</span>
-                <span className="font-medium">{formatNumber(learningRate)}</span>
+                <span className="font-bold">{formatNumber(learningRate)}</span>
                 <span>0.1</span>
               </div>
               <input
@@ -170,7 +170,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <h3 className="text-base font-bold text-gray-900 mb-2">Regularization Rate</h3>
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>0.0001</span>
-                <span className="font-medium">{formatNumber(regularizationRate)}</span>
+                <span className="font-bold">{formatNumber(regularizationRate)}</span>
                 <span>0.01</span>
               </div>
               <input
@@ -189,7 +189,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <h3 className="text-base font-bold text-gray-900 mb-2">Train/Test Split</h3>
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>60%</span>
-                <span className="font-medium">{Math.round(trainTestSplit * 100)}%</span>
+                <span className="font-bold">{Math.round(trainTestSplit * 100)}%</span>
                 <span>90%</span>
               </div>
               <input
