@@ -16,15 +16,6 @@ export default function Home() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // update sliders states: 
-  
-  // Slider states
-  const [selectedDataset, setSelectedDataset] = useState<string>("iris");
-  const [learningRate, setLearningRate] = useState<number>(0.01);
-  const [regularizationRate, setRegularizationRate] = useState<number>(0.001);
-  const [selectedModel, setSelectedModel] = useState<string>("neural_network");
-  const [trainTestSplit, setTrainTestSplit] = useState<number>(0.8);
-
   useEffect(() => {
     async function fetchDatasets() {
       try {
@@ -60,16 +51,19 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link
+                  href="#training"
+                  className="btn btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                >
+                  <FaLayerGroup />
+                  &nbsp;Explore Live Training
+                </Link>
+                <Link
                   href="#datasets"
                   className="btn btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
                 >
                   <FaLayerGroup />
                   &nbsp;Explore Datasets
                 </Link>
-                <button className="btn btn-outline text-lg px-8 py-4 hover:bg-gray-50 transition-all duration-300">
-                  <FaBook />
-                  &nbsp;Learn More
-                </button>
               </div>
             </div>
           </div>
@@ -143,6 +137,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Live Training Section */}
+      <section id="training">
+        <NeuralNetworkSection datasets={datasets} />
+      </section>
+       
       {/* Datasets Section */}
       <section id="datasets" className="py-20">
         <div className="container mx-auto px-4">
@@ -230,9 +229,6 @@ export default function Home() {
           )}
         </div>
       </section>
-
-      {/* Live Training Section */}
-      <NeuralNetworkSection datasets={datasets} />
 
       {/* Call to Action Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
