@@ -406,160 +406,80 @@ export default function Home() {
  *
  * Styling uses Tailwind classes (configured via your global.css theme).
  */
-function LiveTrainingMock() {
-  const [selectedDataset, setSelectedDataset] = useState<string>("");
-  const [learningRate, setLearningRate] = useState<number>(0.01);
-  const [regularizationRate, setRegularizationRate] = useState<number>(0.001);
-  const [selectedModel, setSelectedModel] = useState<string>("neural_network");
-  const [trainTestSplit, setTrainTestSplit] = useState<number>(0.8);
 
-  const formatNumber = (num: number) => num.toFixed(4);
+function LiveTrainingMock() {
+  const [regularizationRate, setRegularizationRate] = useState<number>(0.001);
 
   return (
     <section className="py-12 bg-white">
       {/* Outer canvas matches reference image: 984 × 505 */}
-      <div className="mx-auto w-[984px] h-[505px] flex items-center justify-center">
-        <div className="flex items-center">
-          {/* LEFT COLUMN — 320px wide */}
-          <div className="w-[320px]">
-            <div className="space-y-[16px]">
-              {/* Dataset Selection */}
-              <div className="dashboard-control-box-large">
-                <span className="dashboard-label">
-                  Dataset
-                </span>
-                <select
-                  value={selectedDataset}
-                  onChange={(e) => setSelectedDataset(e.target.value)}
-                  className="dashboard-select"
-                >
-                  <option value="">Select dataset</option>
-                  <option value="iris">Iris Dataset</option>
-                  <option value="mnist">MNIST</option>
-                  <option value="cifar10">CIFAR-10</option>
-                  <option value="custom">Custom Dataset</option>
-                </select>
-              </div>
+      <div className="mx-auto w-[984px] h-[505px]">
+        {/* --- TOP CONTROL STRIP --- */}
+        <div className="grid grid-cols-4 gap-6 mb-6">
+          {/* Data sets */}
+          <div className="h-[56px] rounded-md border-[3px] border-gray-900 bg-white flex items-center pl-6">
+            <span className="text-lg font-semibold text-gray-900">Data sets</span>
+          </div>
 
-              {/* Learning Rate */}
-              <div className="dashboard-control-box-small">
-                <div className="dashboard-control-header">
-                  <span className="dashboard-label-small">
-                    Learning Rate
-                  </span>
-                  <span className="dashboard-control-value">
-                    {learningRate.toFixed(3)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0.001"
-                  max="0.1"
-                  step="0.001"
-                  value={learningRate}
-                  onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-                  className="dashboard-slider"
-                />
-              </div>
+          {/* Learning rate */}
+          <div className="h-[56px] rounded-md border-[3px] border-gray-900 bg-white flex items-center pl-6">
+            <span className="text-lg font-semibold text-gray-900">Learning rate</span>
+          </div>
 
-              {/* Regulation Rate */}
-              <div className="dashboard-control-box-small">
-                <div className="dashboard-control-header">
-                  <span className="dashboard-label-small">
-                    Regulation Rate
-                  </span>
-                  <span className="dashboard-control-value">
-                    {regularizationRate.toFixed(4)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0.0001"
-                  max="0.01"
-                  step="0.0001"
-                  value={regularizationRate}
-                  onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
-                  className="dashboard-slider"
-                />
-              </div>
+          {/* Regulation rate with slider */}
+          <div className="h-[56px] rounded-md border-[3px] border-gray-900 bg-white flex flex-col items-center justify-center px-3 py-1">
+            <div className="flex items-center justify-between w-full mb-0.5">
+              <span className="text-xs font-semibold text-gray-900 leading-none">
+                Regulation Rate
+              </span>
+              <span className="text-xs font-bold text-gray-700 tabular-nums">
+                {regularizationRate.toFixed(4)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0.0001"
+              max="0.01"
+              step="0.0001"
+              value={regularizationRate}
+              onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
+              className="w-full h-1 appearance-none rounded bg-gray-300 cursor-pointer slider-compact"
+            />
+          </div>
 
-              {/* Model Selection */}
-              <div className="dashboard-control-box-medium">
-                <span className="dashboard-label">
-                  Model
-                </span>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="dashboard-select"
-                >
-                  <option value="neural_network">Neural Network</option>
-                  <option value="cnn">Convolutional Neural Network</option>
-                  <option value="rnn">Recurrent Neural Network</option>
-                  <option value="transformer">Transformer</option>
-                </select>
-              </div>
+          {/* Model */}
+          <div className="h-[56px] rounded-md border-[3px] border-gray-900 bg-white flex items-center pl-6">
+            <span className="text-lg font-semibold text-gray-900">Model</span>
+          </div>
+        </div>
 
-              {/* Train/Test Split */}
-              <div className="dashboard-control-box-small">
-                <div className="dashboard-control-header">
-                  <span className="dashboard-label-small">
-                    Train/Test Split
-                  </span>
-                  <span className="dashboard-control-value">
-                    {Math.round(trainTestSplit * 100)}%
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0.6"
-                  max="0.9"
-                  step="0.05"
-                  value={trainTestSplit}
-                  onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
-                  className="dashboard-slider"
-                />
-              </div>
+        {/* --- LIVE PLOT AREA --- */}
+        <div className="w-full h-[420px] bg-blue-100 border-[3px] border-gray-900 rounded-3xl flex flex-col">
+          <div className="flex items-center justify-between p-4">
+            <h3 className="text-xl font-bold text-gray-900">Training Progress</h3>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm text-gray-600">Live</span>
             </div>
           </div>
 
-          {/* Gutter — 24px gap between columns */}
-          <div className="w-[24px]" />
-
-          {/* RIGHT: Live Plot Area — 640 × 420 */}
-          <div className="w-[640px] h-[420px] bg-[#DBEAFE] border border-gray-800 rounded-[36px] flex flex-col">
-            {/* Header with Training Progress and Live indicator */}
-            <div className="flex items-center justify-between mb-4 p-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                Training Progress
-              </h3>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm text-gray-600">Live</span>
-              </div>
-            </div>
-
-            {/* Placeholder for plot */}
-            <div className="flex-1 mx-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-              <div className="text-center">
-                <svg
-                  className="w-16 h-16 text-gray-400 mx-auto mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-                <p className="text-gray-500 text-lg">Live Plot Area</p>
-                <p className="text-gray-400 text-sm">
-                  Training metrics will appear here
-                </p>
-              </div>
+          <div className="mx-4 mb-4 flex-1 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+            <div className="text-center">
+              <svg
+                className="w-16 h-16 text-gray-400 mx-auto mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+              <p className="text-gray-500 text-lg">Live Plot Area</p>
+              <p className="text-gray-400 text-sm">Training metrics will appear here</p>
             </div>
           </div>
         </div>

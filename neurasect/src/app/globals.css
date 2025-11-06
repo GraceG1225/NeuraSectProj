@@ -315,3 +315,50 @@ body {
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
+ /* added: */
+
+ /* --- Live Training Dashboard styles --- */
+.dashboard-control-box-small {
+  @apply w-[320px] h-[60px] rounded-md border-[3px] border-gray-900 bg-white px-4 py-2 flex flex-col justify-center;
+}
+.dashboard-control-box-medium {
+  @apply w-[320px] h-[64px] rounded-md border-[3px] border-gray-900 bg-white px-4 py-2 flex flex-col justify-center;
+}
+.dashboard-control-box-large {
+  @apply w-[320px] h-[72px] rounded-md border-[3px] border-gray-900 bg-white px-4 pt-2 pb-3 flex flex-col justify-between;
+}
+.dashboard-control-header { @apply flex items-center justify-between w-full -mt-1; }
+
+.dashboard-label        { @apply text-base font-semibold text-gray-900 leading-none; }
+.dashboard-label-small  { @apply text-base font-semibold text-gray-900 leading-none; }
+.dashboard-control-value{ @apply text-sm font-bold text-gray-700 tabular-nums; }
+
+.dashboard-select {
+  @apply w-full mt-1 px-3 py-2 text-sm rounded border border-gray-900 bg-white text-gray-900
+         focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* Slider (range) — consistent across browsers */
+.dashboard-slider {
+  @apply w-full mt-2 appearance-none h-1.5 rounded bg-gray-300;
+}
+.dashboard-slider::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  @apply w-4 h-4 rounded-full bg-gray-900 border-2 border-white shadow;
+}
+.dashboard-slider::-moz-range-thumb{
+  @apply w-4 h-4 rounded-full bg-gray-900 border-2 border-white;
+}
+.dashboard-slider::-webkit-slider-runnable-track{
+  @apply h-1.5 rounded bg-gray-300;
+}
+.dashboard-slider::-moz-range-track{
+  @apply h-1.5 rounded bg-gray-300;
+}
+
+/* Optional little numeric input that aligns with value text */
+.dashboard-number {
+  @apply w-20 px-2 py-1 ml-2 text-sm border border-gray-900 rounded bg-white
+         focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
