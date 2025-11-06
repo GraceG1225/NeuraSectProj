@@ -408,6 +408,7 @@ export default function Home() {
  */
 
 function LiveTrainingMock() {
+  const [learningRate, setLearningRate] = useState<number>(0.01);
   const [regularizationRate, setRegularizationRate] = useState<number>(0.001);
 
   return (
@@ -421,9 +422,25 @@ function LiveTrainingMock() {
             <span className="text-lg font-semibold text-gray-900">Data sets</span>
           </div>
 
-          {/* Learning rate */}
-          <div className="h-[56px] rounded-md border-[3px] border-gray-900 bg-white flex items-center pl-6">
-            <span className="text-lg font-semibold text-gray-900">Learning rate</span>
+          {/* Learning rate with slider */}
+          <div className="h-[56px] rounded-md border-[3px] border-gray-900 bg-white flex flex-col items-center justify-center px-3 py-1">
+            <div className="flex items-center justify-between w-full mb-0.5">
+              <span className="text-xs font-semibold text-gray-900 leading-none">
+                Learning Rate
+              </span>
+              <span className="text-xs font-bold text-gray-700 tabular-nums">
+                {learningRate.toFixed(3)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0.001"
+              max="0.1"
+              step="0.001"
+              value={learningRate}
+              onChange={(e) => setLearningRate(parseFloat(e.target.value))}
+              className="w-full h-1 appearance-none rounded bg-gray-300 cursor-pointer slider-compact"
+            />
           </div>
 
           {/* Regulation rate with slider */}
