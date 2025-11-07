@@ -18,12 +18,19 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
   const [selectedModel, setSelectedModel] = useState<string>("neural_network");
   const [selectedRegularizer, setSelectedRegularizer] = useState<string>("l2");
   const [selectedOptimizer, setSelectedOptimizer] = useState<string>("adam");
+  const [numLayers, setNumLayers] = useState<number>(1);
+  const [numNeurons, setNumNeurons] = useState<number>(8);
+  const [activationFunction, setActivationFunction] = useState<string>("relu");
 
   const formatNumber = (num: number) => {
     if (num < 0.001) return num.toFixed(4);
     if (num < 0.01) return num.toFixed(3);
     return num.toFixed(2);
   };
+
+  const increment = (setter: (value: number) => void, value: number) => setter(value + 1);
+  const decrement = (setter: (value: number) => void, value: number) =>
+    setter(Math.max(1, value - 1));
 
   return (
     <section className="py-20 bg-gray-50">
@@ -38,9 +45,9 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Plot Area */}
+          {/* Plot + Sliders + Buttons */}
           <div className="lg:col-span-2">
-            <div className="card p-6 h-96">
+            <div className="card p-6 h-auto bg-white shadow-md rounded-xl flex flex-col justify-center">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">
                   Training Progress
@@ -52,7 +59,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </div>
 
               {/* Placeholder for plot */}
-              <div className="w-full h-80 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+              <div className="w-full h-80 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center mb-8">
                 <div className="text-center">
                   <svg
                     className="w-16 h-16 text-gray-400 mx-auto mb-4"
@@ -73,12 +80,118 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   </p>
                 </div>
               </div>
+
+              {/* --- Sliders Section --- */}
+              <div className="space-y-6">
+                {/* Learning Rate */}
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 mb-2">Learning Rate</h3>
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>0.001</span>
+                    <span className="font-bold">{formatNumber(learningRate)}</span>
+                    <span>0.1</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.001"
+                    max="0.1"
+                    step="0.001"
+                    value={learningRate}
+                    onChange={(e) => setLearningRate(parseFloat(e.target.value))}
+                    className="w-full accent-blue-600 cursor-pointer"
+                  />
+                </div>
+
+                {/* Regularization Rate */}
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 mb-2">Regularization Rate</h3>
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>0.0001</span>
+                    <span className="font-bold">{formatNumber(regularizationRate)}</span>
+                    <span>0.01</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.0001"
+                    max="0.01"
+                    step="0.0001"
+                    value={regularizationRate}
+                    onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
+                    className="w-full accent-blue-600 cursor-pointer"
+                  />
+                </div>
+
+                {/* Train/Test Split */}
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 mb-2">Train/Test Split</h3>
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>60%</span>
+                    <span className="font-bold">{Math.round(trainTestSplit * 100)}%</span>
+                    <span>90%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.6"
+                    max="0.9"
+                    step="0.01"
+                    value={trainTestSplit}
+                    onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
+                    className="w-full accent-blue-600 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Train: {Math.round(trainTestSplit * 100)}%</span>
+                    <span>Test: {Math.round((1 - trainTestSplit) * 100)}%</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 pt-4">
+                  {/* Layers */}
+                  <div className="text-center">
+                    <h3 className="text-base font-bold text-gray-900 mb-2">Layers</h3>
+                    <div className="flex justify-center items-center space-x-3">
+                      <button
+                        onClick={() => decrement(setNumLayers, numLayers)}
+                        className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-full text-lg font-bold"
+                      >
+                        &minus;
+                      </button>
+                      <span className="text-lg font-semibold">{numLayers}</span>
+                      <button
+                        onClick={() => increment(setNumLayers, numLayers)}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-lg font-bold"
+                      >
+                        &#43;
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Neurons */}
+                  <div className="text-center">
+                    <h3 className="text-base font-bold text-gray-900 mb-2">Neurons</h3>
+                    <div className="flex justify-center items-center space-x-3">
+                      <button
+                        onClick={() => decrement(setNumNeurons, numNeurons)}
+                        className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-full text-lg font-bold"
+                      >
+                        &minus;
+                      </button>
+                      <span className="text-lg font-semibold">{numNeurons}</span>
+                      <button
+                        onClick={() => increment(setNumNeurons, numNeurons)}
+                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-lg font-bold"
+                      >
+                        &#43;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Control Panel */}
+          {/* Right Control Panel */}
           <div className="space-y-6">
-            {/* Dataset Selection */}
+            {/* Dataset */}
             <div className="card p-3">
               <h3 className="text-base font-bold text-gray-900 mb-3">Dataset</h3>
               <select
@@ -90,7 +203,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 {datasets?.length ? (
                   datasets.map((dataset) => (
                     <option key={dataset.id} value={dataset.id}>
-                        {dataset.title} 
+                      {dataset.title}
                     </option>
                   ))
                 ) : (
@@ -99,7 +212,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </select>
             </div>
 
-            {/* Model Selection */}
+            {/* Model */}
             <div className="card p-3">
               <h3 className="text-base font-bold text-gray-900 mb-3">Model</h3>
               <select
@@ -114,7 +227,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </select>
             </div>
 
-            {/* Regularizer Selection */}
+            {/* Regularizer */}
             <div className="card p-3">
               <h3 className="text-base font-bold text-gray-900 mb-3">Regularizer</h3>
               <select
@@ -130,7 +243,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </select>
             </div>
 
-            {/* Optimizer Selection */}
+            {/* Optimizer */}
             <div className="card p-3">
               <h3 className="text-base font-bold text-gray-900 mb-3">Optimizer</h3>
               <select
@@ -146,68 +259,24 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </select>
             </div>
 
-            {/* Learning Rate */}
-            <div className="card p-3">
-              <h3 className="text-base font-bold text-gray-900 mb-2">Learning Rate</h3>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>0.001</span>
-                <span className="font-bold">{formatNumber(learningRate)}</span>
-                <span>0.1</span>
+            {/* Activation Function */}
+              <div className="card p-3">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Activation Function</h3>
+                <select
+                  value={activationFunction}
+                  onChange={(e) => setActivationFunction(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="relu">ReLU</option>
+                  <option value="sigmoid">Sigmoid</option>
+                  <option value="tanh">Tanh</option>
+                  <option value="softmax">Softmax</option>
+                  <option value="leaky_relu">Leaky ReLU</option>
+                  <option value="elu">ELU</option>
+                </select>
               </div>
-              <input
-                type="range"
-                min="0.001"
-                max="0.1"
-                step="0.001"
-                value={learningRate}
-                onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
-              />
-            </div>
 
-            {/* Regularization Rate */}
-            <div className="card p-3">
-              <h3 className="text-base font-bold text-gray-900 mb-2">Regularization Rate</h3>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>0.0001</span>
-                <span className="font-bold">{formatNumber(regularizationRate)}</span>
-                <span>0.01</span>
-              </div>
-              <input
-                type="range"
-                min="0.0001"
-                max="0.01"
-                step="0.0001"
-                value={regularizationRate}
-                onChange={(e) => setRegularizationRate(parseFloat(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
-              />
-            </div>
-
-            {/* Train/Test Split */}
-            <div className="card p-3">
-              <h3 className="text-base font-bold text-gray-900 mb-2">Train/Test Split</h3>
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
-                <span>60%</span>
-                <span className="font-bold">{Math.round(trainTestSplit * 100)}%</span>
-                <span>90%</span>
-              </div>
-              <input
-                type="range"
-                min="0.6"
-                max="0.9"
-                step="0.01"
-                value={trainTestSplit}
-                onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>Train: {Math.round(trainTestSplit * 100)}%</span>
-                <span>Test: {Math.round((1 - trainTestSplit) * 100)}%</span>
-              </div>
-            </div>
-
-            {/* Start Training Button */}
+            {/* Start Button */}
             <button className="w-full btn btn-primary py-3 text-lg font-semibold flex items-center justify-center">
               <svg
                 className="w-5 h-5 mr-2"
