@@ -253,112 +253,277 @@ body {
   @apply bg-red-100 text-red-800;
 }
 
-/* Training Dashboard Controls */
-.dashboard-control-box {
-  @apply rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center;
+/* --- Page Section Styles --- */
+.section {
+  @apply py-20;
 }
 
-.dashboard-control-box-small {
-  @apply w-[320px] h-[60px] rounded-[12px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center;
+.section-header {
+  @apply text-center mb-16;
 }
 
-.dashboard-control-box-medium {
-  @apply w-[320px] h-[64px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2;
+.section-title {
+  @apply text-4xl font-bold text-gray-900 mb-4;
 }
 
-.dashboard-control-box-large {
-  @apply w-[320px] h-[72px] rounded-[14px] bg-[#DBEAFE] border border-gray-800 flex flex-col items-center justify-center px-2;
+.section-subtitle {
+  @apply text-xl text-gray-600 max-w-2xl mx-auto;
 }
 
-.dashboard-label {
-  @apply text-base font-bold text-gray-900 mb-1;
+.section-alt-bg {
+  @apply bg-white;
 }
 
-.dashboard-label-small {
-  @apply text-base font-semibold text-gray-900;
+.section-gray-bg {
+  @apply bg-gray-50;
 }
 
-.dashboard-control-header {
-  @apply flex items-center justify-between w-[280px] mb-1;
+.section-gradient-bg {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600;
 }
 
-.dashboard-control-value {
-  @apply text-sm font-bold text-gray-700;
+/* --- Hero Section Styles --- */
+.hero-section {
+  @apply relative overflow-hidden;
 }
 
-.dashboard-select {
-  @apply w-[280px] px-2 py-1 text-sm border border-gray-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-900;
+.hero-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20;
 }
 
-.dashboard-slider {
-  @apply w-[220px] h-[3px] bg-gray-700 rounded mt-[6px];
-  appearance: none;
-  cursor: pointer;
+.hero-content {
+  @apply text-center max-w-4xl mx-auto;
 }
 
-.dashboard-slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #374151;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.hero-title {
+  @apply text-5xl md:text-7xl font-bold text-gray-900 mb-6;
 }
 
-.dashboard-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: #374151;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.hero-description {
+  @apply text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed;
 }
 
- /* added: */
-
- /* --- Live Training Dashboard styles --- */
-.dashboard-control-box-small {
-  @apply w-[320px] h-[60px] rounded-md border-[3px] border-gray-900 bg-white px-4 py-2 flex flex-col justify-center;
-}
-.dashboard-control-box-medium {
-  @apply w-[320px] h-[64px] rounded-md border-[3px] border-gray-900 bg-white px-4 py-2 flex flex-col justify-center;
-}
-.dashboard-control-box-large {
-  @apply w-[320px] h-[72px] rounded-md border-[3px] border-gray-900 bg-white px-4 pt-2 pb-3 flex flex-col justify-between;
-}
-.dashboard-control-header { @apply flex items-center justify-between w-full -mt-1; }
-
-.dashboard-label        { @apply text-base font-semibold text-gray-900 leading-none; }
-.dashboard-label-small  { @apply text-base font-semibold text-gray-900 leading-none; }
-.dashboard-control-value{ @apply text-sm font-bold text-gray-700 tabular-nums; }
-
-.dashboard-select {
-  @apply w-full mt-1 px-3 py-2 text-sm rounded border border-gray-900 bg-white text-gray-900
-         focus:outline-none focus:ring-2 focus:ring-blue-500;
+.hero-actions {
+  @apply flex flex-col sm:flex-row gap-4 justify-center items-center;
 }
 
-/* Slider (range) — consistent across browsers */
-.dashboard-slider {
-  @apply w-full mt-2 appearance-none h-1.5 rounded bg-gray-300;
+.floating-element {
+  @apply absolute opacity-20 animate-pulse;
 }
-.dashboard-slider::-webkit-slider-thumb{
+
+/* --- Feature Card Styles --- */
+.feature-card {
+  @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 p-8 text-center;
+}
+
+.feature-icon-container {
+  @apply w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-6;
+}
+
+.feature-icon-blue {
+  @apply bg-gradient-to-br from-blue-500 to-blue-600;
+}
+
+.feature-icon-purple {
+  @apply bg-gradient-to-br from-purple-500 to-purple-600;
+}
+
+.feature-icon-green {
+  @apply bg-gradient-to-br from-green-500 to-green-600;
+}
+
+.feature-icon {
+  @apply w-8 h-8 text-white;
+}
+
+.feature-title {
+  @apply text-2xl font-bold text-gray-900 mb-4;
+}
+
+.feature-description {
+  @apply text-gray-600;
+}
+
+/* --- Dataset Card Styles --- */
+.dataset-card {
+  @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 p-6;
+}
+
+.dataset-header {
+  @apply flex items-center mb-4;
+}
+
+.dataset-icon {
+  @apply w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-4;
+}
+
+.dataset-icon-text {
+  @apply text-white text-lg font-bold;
+}
+
+.dataset-title {
+  @apply text-xl font-bold text-gray-900;
+}
+
+.dataset-subtitle {
+  @apply text-gray-500 text-sm;
+}
+
+.dataset-description {
+  @apply text-gray-600 mb-6;
+}
+
+.dataset-footer {
+  @apply flex items-center justify-between;
+}
+
+.dataset-status {
+  @apply flex items-center text-sm text-gray-500;
+}
+
+/* --- Live Training Dashboard Styles --- */
+.training-dashboard-container {
+  @apply mx-auto w-[984px] h-[505px];
+}
+
+.training-controls-grid {
+  @apply grid grid-cols-4 gap-6 mb-6;
+}
+
+.training-control-box {
+  @apply h-[56px] rounded-md border-[3px] border-gray-900 bg-white;
+}
+
+.training-control-box-simple {
+  @apply flex items-center pl-6;
+}
+
+.training-control-box-slider {
+  @apply flex flex-col items-center justify-center px-3 py-1;
+}
+
+.training-control-label {
+  @apply text-xs font-semibold text-gray-900 leading-none;
+}
+
+.training-control-value {
+  @apply text-xs font-bold text-gray-700 tabular-nums;
+}
+
+.training-control-header {
+  @apply flex items-center justify-between w-full mb-0.5;
+}
+
+.training-slider {
+  @apply w-full h-1 appearance-none rounded bg-gray-300 cursor-pointer;
+}
+
+.training-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  @apply w-4 h-4 rounded-full bg-gray-900 border-2 border-white shadow;
-}
-.dashboard-slider::-moz-range-thumb{
-  @apply w-4 h-4 rounded-full bg-gray-900 border-2 border-white;
-}
-.dashboard-slider::-webkit-slider-runnable-track{
-  @apply h-1.5 rounded bg-gray-300;
-}
-.dashboard-slider::-moz-range-track{
-  @apply h-1.5 rounded bg-gray-300;
+  @apply w-4 h-4 rounded-full bg-gray-900 border-2 border-white shadow cursor-pointer;
 }
 
-/* Optional little numeric input that aligns with value text */
-.dashboard-number {
-  @apply w-20 px-2 py-1 ml-2 text-sm border border-gray-900 rounded bg-white
-         focus:outline-none focus:ring-2 focus:ring-blue-500;
+.training-slider::-moz-range-thumb {
+  @apply w-4 h-4 rounded-full bg-gray-900 border-2 border-white cursor-pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.training-slider::-webkit-slider-runnable-track {
+  @apply h-1 rounded bg-gray-300;
+}
+
+.training-slider::-moz-range-track {
+  @apply h-1 rounded bg-gray-300;
+}
+
+.training-plot-area {
+  @apply w-full h-[420px] bg-blue-100 border-[3px] border-gray-900 rounded-3xl flex flex-col;
+}
+
+.training-plot-header {
+  @apply flex items-center justify-between p-4;
+}
+
+.training-plot-title {
+  @apply text-xl font-bold text-gray-900;
+}
+
+.training-live-indicator {
+  @apply flex items-center space-x-2;
+}
+
+.training-live-dot {
+  @apply w-3 h-3 bg-green-500 rounded-full animate-pulse;
+}
+
+.training-plot-content {
+  @apply mx-4 mb-4 flex-1 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center;
+}
+
+.training-plot-placeholder {
+  @apply text-center;
+}
+
+.training-plot-icon {
+  @apply w-16 h-16 text-gray-400 mx-auto mb-4;
+}
+
+/* --- Call to Action Section Styles --- */
+.cta-section {
+  @apply py-20 bg-gradient-to-r from-blue-600 to-purple-600;
+}
+
+.cta-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center;
+}
+
+.cta-title {
+  @apply text-4xl font-bold text-white mb-4;
+}
+
+.cta-description {
+  @apply text-xl text-blue-100 mb-8 max-w-2xl mx-auto;
+}
+
+.cta-actions {
+  @apply flex flex-col sm:flex-row gap-4 justify-center;
+}
+
+.cta-button-primary {
+  @apply inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-white text-blue-600 hover:bg-gray-50 shadow-lg;
+}
+
+.cta-button-outline {
+  @apply inline-flex items-center justify-center px-8 py-4 text-lg font-medium rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 border-white text-white hover:bg-white hover:text-blue-600;
+}
+
+/* --- Empty State Styles --- */
+.empty-state {
+  @apply text-center py-20;
+}
+
+.empty-state-icon-container {
+  @apply w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6;
+}
+
+.empty-state-icon {
+  @apply w-12 h-12 text-gray-400;
+}
+
+.empty-state-title {
+  @apply text-2xl font-bold text-gray-900 mb-2;
+}
+
+.empty-state-description {
+  @apply text-gray-600 mb-6;
+}
+
+/* --- Loading State Styles --- */
+.loading-container {
+  @apply flex justify-center items-center py-20;
+}
+
+.loading-text {
+  @apply ml-4 text-gray-600 text-lg;
 }
