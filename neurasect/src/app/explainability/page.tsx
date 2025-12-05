@@ -1,16 +1,29 @@
 'use client';
 import Link from "next/link";
+import { useTheme } from "../components/theme/themeContext";
 
 export default function ExplainabilityPage() {
+  const { theme } = useTheme("explainability");
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div
+      className="min-h-screen"
+      style={{ backgroundImage: theme.background }}
+    >
       {/* Header Section */}
       <section className="relative overflow-hidden">
         <div className="container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto">
             <div className="animate-fade-in">
               <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-                <span className="gradient-text">
+                <span
+                  className="gradient-text"
+                  style={{
+                    backgroundImage: theme.headingGradient,
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
                   Explainability
                 </span>
               </h1>
@@ -22,6 +35,7 @@ export default function ExplainabilityPage() {
                 <Link
                   href="/"
                   className="btn btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                  style={{ backgroundImage: theme.buttonGradient }}
                 >
                   ← Back to Home
                 </Link>
@@ -31,9 +45,18 @@ export default function ExplainabilityPage() {
         </div>
 
         {/* Floating Elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-16 h-16 bg-purple-200 rounded-full opacity-20 animate-pulse delay-1000"></div>
-        <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-pink-200 rounded-full opacity-20 animate-pulse delay-2000"></div>
+        <div
+          className="absolute top-20 left-10 w-20 h-20 rounded-full opacity-20 animate-pulse"
+          style={{ backgroundColor: theme.bubbleColors[0] }}
+        ></div>
+        <div
+          className="absolute top-40 right-20 w-16 h-16 rounded-full opacity-20 animate-pulse delay-1000"
+          style={{ backgroundColor: theme.bubbleColors[1] }}
+        ></div>
+        <div
+          className="absolute bottom-20 left-1/4 w-12 h-12 rounded-full opacity-20 animate-pulse delay-2000"
+          style={{ backgroundColor: theme.bubbleColors[2] }}
+        ></div>
       </section>
 
       {/* Main Content Section */}
