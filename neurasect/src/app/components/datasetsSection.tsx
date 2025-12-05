@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaCheckCircle, FaFileAlt } from "react-icons/fa";
 import { IoIosArrowForward, IoIosRefresh } from "react-icons/io";
+import { useTheme } from "./theme/themeContext";
 
 interface Dataset {
   id: string;
@@ -12,6 +13,7 @@ interface Dataset {
 export default function DatasetsSection() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme("datasets");
 
   useEffect(() => {
     async function fetchDatasets() {
@@ -57,7 +59,10 @@ export default function DatasetsSection() {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-4">
+                  <div
+                    className="w-12 h-12 rounded-lg flex items-center justify-center mr-4"
+                    style={{ backgroundImage: theme.buttonGradient }}
+                  >
                     <span className="text-white text-lg font-bold">
                       {dataset.title?.charAt(0).toUpperCase() || "D"}
                     </span>
@@ -85,6 +90,7 @@ export default function DatasetsSection() {
                   <Link
                     href={`/datasets/${dataset.id}`}
                     className="btn btn-primary text-sm px-4 py-2"
+                    style={{ backgroundImage: theme.buttonGradient }}
                   >
                     Explore Dataset
                     <IoIosArrowForward />

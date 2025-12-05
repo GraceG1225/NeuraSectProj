@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 import { IoIosArrowBack } from 'react-icons/io';
 import Link from 'next/link';
+import { useTheme } from '../../components/theme/themeContext';
 
 interface Dataset {
     id: string;
@@ -16,6 +17,7 @@ export default function DatasetPage() {
     const [dataset, setDataset] = useState<Dataset | null>(null);
     const [tables, setTables] = useState<{ tableName: string; data: any[] }[]>([]);
     const [loading, setLoading] = useState(true);
+    const { theme } = useTheme("datasetDetail");
 
     useEffect(() => {
     async function fetchData() {
@@ -52,7 +54,10 @@ export default function DatasetPage() {
 
     if (loading) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div
+            className="min-h-screen flex items-center justify-center"
+            style={{ backgroundImage: theme.background }}
+        >
         <div className="spinner w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
@@ -72,12 +77,24 @@ export default function DatasetPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
+        <div
+            className="min-h-screen py-20"
+            style={{ backgroundImage: theme.background }}
+        >
         <div className="container mx-auto px-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-center mb-10">
             <div>
-            <h1 className="text-5xl font-bold text-gray-900 mb-3">{dataset.title}</h1>
+            <h1
+                className="text-5xl font-bold text-gray-900 mb-3 gradient-text"
+                style={{
+                    backgroundImage: theme.headingGradient,
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                }}
+            >
+                {dataset.title}
+            </h1>
             </div>
             <Link
                 href="/"
