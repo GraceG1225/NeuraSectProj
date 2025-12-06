@@ -84,8 +84,8 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/settings"
-                  className="btn btn-outline text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border-2"
-                  style={{ borderColor: "rgba(255,255,255,0.6)" }}
+                  className="btn btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
+                  style={{ backgroundImage: theme.buttonGradient }}
                 >
                   Theme Settings
                 </Link>
