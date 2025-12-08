@@ -63,14 +63,87 @@ export default function ExplainabilityPage() {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">
+              Terminology
+            </h2>
+            <div className="space-y-10 text-gray-700 text-lg leading-relaxed">
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Datasets</h3>
+                <p>
+                  A dataset is the collection of data your model learns from. It is usually has
+                  <strong> features</strong> (values that the model uses to predict) and <strong>labels</strong> (values 
+                  that we want the model to predict). A good dataset improves model accuracy, while a poor one leads to bad predictions.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Models</h3>
+                <p>
+                  The model is the mathematical structure that tries to learn relationships between
+                  inputs and outputs. Neural networks are built from layers of neurons that learn patterns.
+                  These models attempt to prediction data based off this patterns.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Layers & Neurons</h3>
+                <p>
+                  <strong>Layers</strong> are the building blocks of neural networks. Each layer processes
+                  information and passes it forward. <strong>Neurons</strong> are the units inside layers
+                  that perform calculations. More layers/neurons can learn more complex patterns, but may
+                  require more data.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Optimizer</h3>
+                <p>
+                  An optimizer adjusts the model&apos;s parameters (weights) to reduce prediction errors.
+                  Common optimizers include <strong>SGD</strong>, <strong>Adam</strong>, and
+                  <strong> RMSProp</strong>.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Activation Function</h3>
+                <p>
+                  Activation functions define how a neuron reacts to input signals. Popular functions include
+                  <strong> ReLU</strong>, <strong>Sigmoid</strong>, and <strong>Tanh</strong>.
+                  They help the network learn non&ndash;linear patterns.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Learning Rate</h3>
+                <p>
+                  The learning rate controls how big the weight updates are during training. A high learning
+                  rate learns fast but risks instability; a low one is stable but slow.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Regularizer & Regularization Rate</h3>
+                <p>
+                  Regularization prevents overfitting, whenever the model memorizes data instead of learning
+                  general patterns. Common regularizers include <strong>L1</strong>, <strong>L2</strong>, and&nbsp;
+                  <strong>Dropout</strong>. The <strong>regularization rate</strong> controls how strong the
+                  regularization effect is.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-2xl font-semibold mb-3">Train/Test Split</h3>
+                <p>
+                  To evaluate a model, the dataset is divided into a <strong>training set</strong> the model
+                  learns from, and a <strong>test set</strong> used to measure how well it performs on new
+                  data. For example, datasets are commonly split in ratios of 80/20 or 70/30.
+                </p>
+              </div>
+            </div>
+            <h2 className="py-10 text-3xl font-bold text-gray-900 mb-8">
               Model Explainability
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
-              This page is dedicated to explaining how neural network models make their predictions.
-              Add your explainability features and visualizations here.
-            </p>
-            
+
             {/* Placeholder for explainability content */}
             <div className="bg-gray-50 rounded-lg p-8 border-2 border-dashed border-gray-300">
               <p className="text-center text-gray-500">
@@ -83,4 +156,3 @@ export default function ExplainabilityPage() {
     </div>
   );
 }
-

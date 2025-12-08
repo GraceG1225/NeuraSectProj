@@ -82,13 +82,6 @@ export default function Home() {
                   <FaLayerGroup />
                   &nbsp;Explore Datasets
                 </Link>
-                <Link
-                  href="/settings"
-                  className="btn btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300"
-                  style={{ backgroundImage: theme.buttonGradient }}
-                >
-                  Theme Settings
-                </Link>
               </div>
             </div>
           </div>
@@ -138,10 +131,19 @@ export default function Home() {
             networks and machine learning.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="btn border-2 border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4 transition-all duration-300">
+            <Link
+              href="/explainability"
+              className="btn border-2 border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4 transition-all duration-300"
+              >
               <FaRegQuestionCircle />
               &nbsp;Learn the Basics
-            </button>
+            </Link>
+            <Link
+              href="/settings"
+              className="btn border-2 border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4 transition-all duration-300"
+              >
+                &nbsp;Customize Themes
+              </Link>
           </div>
         </div>
       </section>
