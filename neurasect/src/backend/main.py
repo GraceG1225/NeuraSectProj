@@ -109,11 +109,12 @@ def build_model(
     
     kernel_reg = get_regularizer(regularizer, regularization_rate) if regularizer not in ['none', 'dropout', 'batch_norm'] else None
     
+    model.add(keras.layers.Input(shape=(input_shape,)))
+    
     model.add(keras.layers.Dense(
         num_neurons,
         activation=activation,
-        kernel_regularizer=kernel_reg,
-        input_shape=(input_shape,)
+        kernel_regularizer=kernel_reg
     ))
 
     if regularizer == 'dropout':
@@ -233,17 +234,24 @@ def load_supabase_dataset(dataset_id: str):
         if len(df.columns) < 2:
             raise HTTPException(status_code=400, detail="Dataset must have at least 2 columns (features + target)")
         
-        X = df.iloc[:, :-1].values
+        X_df = df.iloc[:, :-1]
         y = df.iloc[:, -1].values
+        
+        from sklearn.preprocessing import LabelEncoder
+        
+        X_encoded = X_df.copy()
+        for col in X_encoded.columns:
+            if X_encoded[col].dtype == 'object' or X_encoded[col].dtype == 'string':
+                le = LabelEncoder()
+                X_encoded[col] = le.fit_transform(X_encoded[col].astype(str))
+        
+        X = X_encoded.values.astype(float)
         
         try:
             y = pd.to_numeric(y)
         except:
-            from sklearn.preprocessing import LabelEncoder
             le = LabelEncoder()
-            y = le.fit_transform(y)
-        
-        X = X.astype(float)
+            y = le.fit_transform(y.astype(str))
 
         unique_values = len(np.unique(y))
         if unique_values < 20:  
@@ -366,11 +374,14 @@ async def training_websocket(websocket: WebSocket, session_id: str):
     active_connections[session_id] = websocket
     session = training_sessions[session_id]
     
+    ws_open = True
+    
     try:
         class WebSocketCallback(keras.callbacks.Callback):
             def __init__(self, ws: WebSocket):
                 super().__init__()
                 self.ws = ws
+                self.ws_open = True
                 
             def on_epoch_end(self, epoch, logs=None):
                 logs = logs or {}
@@ -388,13 +399,29 @@ async def training_websocket(websocket: WebSocket, session_id: str):
                     update['mae'] = float(logs.get('mae', 0))
                     update['val_mae'] = float(logs.get('val_mae', 0)) if 'val_mae' in logs else None
                 
-                asyncio.create_task(self.ws.send_json(update))
+                if self.ws_open:
+                    try:
+                        asyncio.create_task(self._safe_send(update))
+                    except Exception as e:
+                        print(f"Error sending epoch update: {e}")
+                        self.ws_open = False
+            
+            async def _safe_send(self, update):
+                try:
+                    if self.ws_open:
+                        await self.ws.send_json(update)
+                except RuntimeError:
+                    self.ws_open = False
+                except Exception:
+                    self.ws_open = False
         
         await websocket.send_json({
             "type": "training_started",
             "message": "Training started",
             "epochs": session['config'].epochs
         })
+        
+        ws_callback = WebSocketCallback(websocket)
         
         session['status'] = 'training'
         history = session['model'].fit(
@@ -403,36 +430,54 @@ async def training_websocket(websocket: WebSocket, session_id: str):
             validation_data=(session['X_test'], session['y_test']),
             epochs=session['config'].epochs,
             batch_size=session['config'].batch_size,
-            callbacks=[WebSocketCallback(websocket)],
+            callbacks=[ws_callback],
             verbose=0
         )
         
         session['status'] = 'completed'
         session['history'] = history.history
         
-        await websocket.send_json({
-            "type": "training_complete",
-            "message": "Training completed successfully",
-            "final_metrics": {
-                "loss": float(history.history['loss'][-1]),
-                "val_loss": float(history.history['val_loss'][-1]) if 'val_loss' in history.history else None,
-                "accuracy": float(history.history.get('accuracy', [0])[-1]) if 'accuracy' in history.history else None,
-                "val_accuracy": float(history.history.get('val_accuracy', [0])[-1]) if 'val_accuracy' in history.history else None
-            }
-        })
+        ws_callback.ws_open = False
+        
+        if ws_open:
+            try:
+                await websocket.send_json({
+                    "type": "training_complete",
+                    "message": "Training completed successfully",
+                    "final_metrics": {
+                        "loss": float(history.history['loss'][-1]),
+                        "val_loss": float(history.history['val_loss'][-1]) if 'val_loss' in history.history else None,
+                        "accuracy": float(history.history.get('accuracy', [0])[-1]) if 'accuracy' in history.history else None,
+                        "val_accuracy": float(history.history.get('val_accuracy', [0])[-1]) if 'val_accuracy' in history.history else None
+                    }
+                })
+            except:
+                pass  
         
     except WebSocketDisconnect:
         print(f"WebSocket disconnected for session {session_id}")
         session['status'] = 'cancelled'
+        ws_open = False
     except Exception as e:
-        await websocket.send_json({
-            "type": "error",
-            "message": str(e)
-        })
+        print(f"Error during training: {e}")
+        if ws_open:
+            try:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": str(e)
+                })
+            except:
+                pass
         session['status'] = 'error'
+        ws_open = False
     finally:
+        ws_open = False
         if session_id in active_connections:
             del active_connections[session_id]
+        try:
+            await websocket.close()
+        except:
+            pass
 
 @app.get("/api/train/{session_id}/status")
 async def get_training_status(session_id: str):
