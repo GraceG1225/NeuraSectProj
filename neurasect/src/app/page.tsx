@@ -2,8 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import NeuralNetworkSection from "./components/neuralSection";
-import FeaturesSection from "./components/featuresSection";
-import DatasetsSection from "./components/datasetsSection";
+import FeaturesSection from "./components/featureSection";
+import DatasetsSection from "./components/datasetSection";
 import { FaLayerGroup, FaRegQuestionCircle } from "react-icons/fa";
 import { useTheme } from "./components/theme/themeContext";
 
