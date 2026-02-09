@@ -12,6 +12,11 @@ from datetime import datetime
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+<<<<<<< HEAD
+=======
+import import_ipynb
+from MLPClass import MLP
+>>>>>>> ae10d97 (moving files from backend to MLP)
 
 load_dotenv()
 
@@ -47,7 +52,12 @@ class TrainingConfig(BaseModel):
     dataset_id: str
     model_type: str
     num_layers: int
+<<<<<<< HEAD
     num_neurons: int
+=======
+    # num_neurons: int   # previously int
+    num_neurons: list # has to be a list  
+>>>>>>> ae10d97 (moving files from backend to MLP)
     learning_rate: float
     regularization_rate: float
     train_test_split: float
@@ -98,12 +108,18 @@ def get_regularizer(regularizer_name: str, rate: float):
 def build_model(
     input_shape: int,
     output_shape: int,
+<<<<<<< HEAD
     num_layers: int,
     num_neurons: int,
+=======
+    num_of_layers: int,
+    num_of_neurons_per_layer: list,
+>>>>>>> ae10d97 (moving files from backend to MLP)
     activation: str,
     regularizer: str,
     regularization_rate: float
 ) -> keras.Model:
+<<<<<<< HEAD
     
     model = keras.Sequential()
     
@@ -140,6 +156,13 @@ def build_model(
         model.add(keras.layers.Dense(output_shape, activation='softmax'))
     
     return model
+=======
+
+    model_instance  = MLP(input_shape=input_shape,output_shape=output_shape,num_of_layers=num_of_layers,num_of_neurons_per_layer=num_of_neurons_per_layer,activation=activation)
+    model = model_instance.tf_build()
+    return model
+    
+>>>>>>> ae10d97 (moving files from backend to MLP)
 
 def get_model_summary(model: keras.Model) -> str:
     string_list = []
@@ -270,7 +293,11 @@ def load_supabase_dataset(dataset_id: str):
         print(f"Error loading Supabase dataset: {e}")
         raise HTTPException(status_code=500, detail=f"Error loading dataset: {str(e)}")
 
+<<<<<<< HEAD
 def prepare_data(X, y, train_test_split: float):
+=======
+def prepare_data(X, y, train_test_split: float):  # this is to be edited to fit Siri's Data Preprocessing suite
+>>>>>>> ae10d97 (moving files from backend to MLP)
     from sklearn.model_selection import train_test_split as sklearn_split
     from sklearn.preprocessing import StandardScaler
 
@@ -316,15 +343,24 @@ async def start_training(config: TrainingConfig):
         model = build_model(
             input_shape=X_train.shape[1],
             output_shape=num_classes,
+<<<<<<< HEAD
             num_layers=config.num_layers,
             num_neurons=config.num_neurons,
+=======
+            num_of_layers=config.num_layers,
+            num_of_neurons_per_layer=config.num_neurons, # has to be a list; verify in config
+>>>>>>> ae10d97 (moving files from backend to MLP)
             activation=config.activation,
             regularizer=config.regularizer,
             regularization_rate=config.regularization_rate
         )
         
         optimizer = get_optimizer(config.optimizer, config.learning_rate)
+<<<<<<< HEAD
         
+=======
+        # Loss functions are fixed too - that needs to change, we make loss function as input, so does accuracy
+>>>>>>> ae10d97 (moving files from backend to MLP)
         if num_classes == 1:
             model.compile(
                 optimizer=optimizer,
