@@ -31,7 +31,12 @@
 git clone https://github.com/GraceG1225/NeuraSectProj.git
 ```
 
-2. Set up environment variables (create a .env file in the base folder):
+2. Navigate to the project directory:
+```
+cd neurasect
+```
+
+3. Set up environment variables (create a .env file in the base folder):
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_key
@@ -43,11 +48,11 @@ Click on Data API to find the Project URL.
 
 Click on API Keys to find the publishable and secret keys.
 
-3. Build and Run with Docker Compose
+4. Build and Run with Docker Compose
 ```
 docker compose up --build
 ```
-4. Open the application in your browser:
+5. Open the application in your browser:
 ```
 http://localhost:3000
 ```
