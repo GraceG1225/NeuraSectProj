@@ -40,28 +40,36 @@ interface NeuralSectionProps {
 }
 
 export default function NeuralSection({ datasets }: NeuralSectionProps) {
-  const [selectedDataset, setSelectedDataset] = useState<string>("iris");
-  const [selectedModel, setSelectedModel] = useState<string>("neural_network");
-  const [selectedRegularizer, setSelectedRegularizer] = useState<string>("l2");
-  const [selectedOptimizer, setSelectedOptimizer] = useState<string>("adam");
-  const [activationFunction, setActivationFunction] = useState<string>("relu");
 
-  const [learningRate, setLearningRate] = useState<number>(0.01);
-  const [regularizationRate, setRegularizationRate] = useState<number>(0.001);
-  const [trainTestSplit, setTrainTestSplit] = useState<number>(0.8);
-  const [epochs, setEpochs] = useState<number>(100);
+  const [modelConfig, setModelConfig] = useState({
+    selectedDataset: "iris",
+    selectedModel: "neural_network",
+    selectedRegularizer: "l2",
+    selectedOptimizer: "adam",
+    activationFunction: "relu",
+  });
 
-  const [numLayers, setNumLayers] = useState<number>(2);
-  const [numNeurons, setNumNeurons] = useState<number>(8);
+  const [hyperparameters, setHyperparameters] = useState({
+    learningRate: 0.01,
+    regularizationRate: 0.001,
+    trainTestSplit: 0.8,
+    epochs: 100,
+    numLayers: 2,
+    numNeurons: 8,
+  });
 
-  const [localDatasets, setLocalDatasets] = useState<any[]>([]);
-  const [localModels, setLocalModels] = useState<any[]>([]);
+  const [localFiles, setLocalFiles] = useState({
+    datasets: [] as any[],
+    models: [] as any[],
+  });
 
-  const [isTraining, setIsTraining] = useState<boolean>(false);
-  const [trainingProgress, setTrainingProgress] = useState<EpochUpdate[]>([]);
-  const [currentEpoch, setCurrentEpoch] = useState<number>(0);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [modelSummary, setModelSummary] = useState<string>("");
+  const [trainingState, setTrainingState] = useState({
+    isTraining: false,
+    sessionId: null as string | null,
+    currentEpoch: 0,
+    trainingProgress: [] as EpochUpdate[],
+    modelSummary: "",
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -71,16 +79,13 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     return num.toFixed(2);
   };
 
-  const increment = (setter: (value: number) => void, value: number) =>
-    setter(value + 1);
-  const decrement = (setter: (value: number) => void, value: number) =>
-    setter(Math.max(1, value - 1));
+  const increment = (value: number) => value + 1;
+  const decrement = (value: number) => Math.max(1, value - 1);
 
   async function refreshLocalFiles() {
     const ds = await getAllFiles("datasets");
     const ms = await getAllFiles("models");
-    setLocalDatasets(ds);
-    setLocalModels(ms);
+    setLocalFiles({ datasets: ds, models: ms });
   }
 
   useEffect(() => {
@@ -130,66 +135,90 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
   }
 
   async function handleStartTraining() {
-    if (isTraining) {
+    if (trainingState.isTraining) {
       alert("Training is already in progress!");
       return;
     }
 
-    if (!selectedDataset) {
+    if (!modelConfig.selectedDataset) {
       alert("Please select a dataset first!");
       return;
     }
 
     try {
-      setIsTraining(true);
-      setTrainingProgress([]);
-      setCurrentEpoch(0);
+      setTrainingState((prev) => ({
+        ...prev,
+        isTraining: true,
+        trainingProgress: [],
+        currentEpoch: 0,
+      }));
 
       const config: TrainingConfig = {
-        dataset_id: selectedDataset,
-        model_type: selectedModel,
-        num_layers: numLayers,
-        num_neurons: numNeurons,
-        learning_rate: learningRate,
-        regularization_rate: regularizationRate,
-        train_test_split: trainTestSplit,
-        regularizer: selectedRegularizer,
-        optimizer: selectedOptimizer,
-        activation: activationFunction,
-        epochs: epochs,
+        dataset_id: modelConfig.selectedDataset,
+        model_type: modelConfig.selectedModel,
+        num_layers: hyperparameters.numLayers,
+        num_neurons: hyperparameters.numNeurons,
+        learning_rate: hyperparameters.learningRate,
+        regularization_rate: hyperparameters.regularizationRate,
+        train_test_split: hyperparameters.trainTestSplit,
+        regularizer: modelConfig.selectedRegularizer,
+        optimizer: modelConfig.selectedOptimizer,
+        activation: modelConfig.activationFunction,
+        epochs: hyperparameters.epochs,
         batch_size: 32,
       };
 
       const response = await startTraining(config);
-      setSessionId(response.session_id);
-      setModelSummary(response.model_summary);
+      setTrainingState((prev) => ({
+        ...prev,
+        sessionId: response.session_id,
+        modelSummary: response.model_summary,
+      }));
 
       wsRef.current = connectTrainingWebSocket(
         response.session_id,
         (update: EpochUpdate) => {
-          if (update.type === "epoch_update" && update.epoch) {
-            setCurrentEpoch(update.epoch);
-            setTrainingProgress((prev) => [...prev, update]);
+          if (update.type === "epoch_update" && update.epoch !== undefined) {
+            setTrainingState((prev) => ({
+              ...prev,
+              currentEpoch: update.epoch as number,
+              trainingProgress: [...prev.trainingProgress, update],
+            }));
           } else if (update.type === "training_complete") {
-            setIsTraining(false);
+            setTrainingState((prev) => ({
+              ...prev,
+              isTraining: false,
+            }));
             alert("Training completed successfully!");
           } else if (update.type === "error") {
-            setIsTraining(false);
+            setTrainingState((prev) => ({
+              ...prev,
+              isTraining: false,
+            }));
             alert(`Training error: ${update.message}`);
           }
         },
         (error) => {
           console.error("WebSocket error:", error);
-          setIsTraining(false);
+          setTrainingState((prev) => ({
+            ...prev,
+            isTraining: false,
+          }));
         },
         () => {
-          setIsTraining(false);
+          setTrainingState((prev) => ({
+            ...prev,
+            isTraining: false,
+          }));
         }
       );
     } catch (error: any) {
       console.error("Training error:", error);
       alert(`Failed to start training: ${error.message}`);
-      setIsTraining(false);
+      setTrainingState((prev) => ({
+        ...prev,
+        isTraining: false,
+      }));
     }
   }
 
@@ -198,22 +227,25 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       wsRef.current.close();
       wsRef.current = null;
     }
-    setIsTraining(false);
+    setTrainingState((prev) => ({
+      ...prev,
+      isTraining: false,
+    }));
   }
 
   const chartData = {
-    labels: trainingProgress.map((p) => `Epoch ${p.epoch}`),
+    labels: trainingState.trainingProgress.map((p) => `Epoch ${p.epoch}`),
     datasets: [
       {
         label: "Training Loss",
-        data: trainingProgress.map((p) => p.loss),
+        data: trainingState.trainingProgress.map((p) => p.loss),
         borderColor: "rgb(59, 130, 246)",
         backgroundColor: "rgba(59, 130, 246, 0.1)",
         tension: 0.4,
       },
       {
         label: "Validation Loss",
-        data: trainingProgress.map((p) => p.val_loss),
+        data: trainingState.trainingProgress.map((p) => p.val_loss),
         borderColor: "rgb(239, 68, 68)",
         backgroundColor: "rgba(239, 68, 68, 0.1)",
         tension: 0.4,
@@ -265,11 +297,11 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   accept=".csv"
                   onChange={handleUploadDataset}
                   className="w-full border p-2 rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 />
                 <div className="mt-2 text-sm text-gray-600">
-                  {localDatasets.length > 0 ? (
-                    localDatasets.map((d) => (
+                  {localFiles.datasets.length > 0 ? (
+                    localFiles.datasets.map((d) => (
                       <div
                         key={d.id}
                         className="mt-1 flex justify-between items-center"
@@ -278,7 +310,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                         <button
                           onClick={() => handleDeleteDataset(d.id)}
                           className="text-red-500 text-sm"
-                          disabled={isTraining}
+                          disabled={trainingState.isTraining}
                         >
                           Delete
                         </button>
@@ -299,11 +331,11 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   accept=".onnx"
                   onChange={handleUploadModel}
                   className="w-full border p-2 rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 />
                 <div className="mt-2 text-sm text-gray-600">
-                  {localModels.length > 0 ? (
-                    localModels.map((m) => (
+                  {localFiles.models.length > 0 ? (
+                    localFiles.models.map((m) => (
                       <div
                         key={m.id}
                         className="mt-1 flex justify-between items-center"
@@ -312,7 +344,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                         <button
                           onClick={() => handleDeleteModel(m.id)}
                           className="text-red-500 text-sm"
-                          disabled={isTraining}
+                          disabled={trainingState.isTraining}
                         >
                           Delete
                         </button>
@@ -330,10 +362,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <div>
                 <h3 className="text-base font-bold text-gray-900 mb-2">Dataset</h3>
                 <select
-                  value={selectedDataset}
-                  onChange={(e) => setSelectedDataset(e.target.value)}
+                  value={modelConfig.selectedDataset}
+                  onChange={(e) =>
+                    setModelConfig((prev) => ({
+                      ...prev,
+                      selectedDataset: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 >
                   <option value="">Select Dataset</option>
                   {datasets?.length > 0 &&
@@ -342,8 +379,10 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                         {dataset.title}
                       </option>
                     ))}
-                  {localDatasets.length > 0 && <option disabled>──────────</option>}
-                  {localDatasets.map((d) => (
+                  {localFiles.datasets.length > 0 && (
+                    <option disabled>──────────</option>
+                  )}
+                  {localFiles.datasets.map((d) => (
                     <option key={d.id} value={d.id}>
                       (Local) {d.id}
                     </option>
@@ -354,17 +393,24 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <div>
                 <h3 className="text-base font-bold text-gray-900 mb-2">Model</h3>
                 <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
+                  value={modelConfig.selectedModel}
+                  onChange={(e) =>
+                    setModelConfig((prev) => ({
+                      ...prev,
+                      selectedModel: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 >
                   <option value="neural_network">Neural Network</option>
                   <option value="cnn">CNN</option>
                   <option value="rnn">RNN</option>
                   <option value="transformer">Transformer</option>
-                  {localModels.length > 0 && <option disabled>──────────</option>}
-                  {localModels.map((m) => (
+                  {localFiles.models.length > 0 && (
+                    <option disabled>──────────</option>
+                  )}
+                  {localFiles.models.map((m) => (
                     <option key={m.id} value={m.id}>
                       (Local) {m.id}
                     </option>
@@ -378,10 +424,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <div>
                 <h3 className="font-bold text-gray-900 mb-2">Regularizer</h3>
                 <select
-                  value={selectedRegularizer}
-                  onChange={(e) => setSelectedRegularizer(e.target.value)}
+                  value={modelConfig.selectedRegularizer}
+                  onChange={(e) =>
+                    setModelConfig((prev) => ({
+                      ...prev,
+                      selectedRegularizer: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 >
                   <option value="none">None</option>
                   <option value="l1">L1</option>
@@ -394,10 +445,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <div>
                 <h3 className="font-bold text-gray-900 mb-2">Optimizer</h3>
                 <select
-                  value={selectedOptimizer}
-                  onChange={(e) => setSelectedOptimizer(e.target.value)}
+                  value={modelConfig.selectedOptimizer}
+                  onChange={(e) =>
+                    setModelConfig((prev) => ({
+                      ...prev,
+                      selectedOptimizer: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 >
                   <option value="adam">Adam</option>
                   <option value="sgd">SGD</option>
@@ -410,10 +466,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               <div>
                 <h3 className="font-bold text-gray-900 mb-2">Activation</h3>
                 <select
-                  value={activationFunction}
-                  onChange={(e) => setActivationFunction(e.target.value)}
+                  value={modelConfig.activationFunction}
+                  onChange={(e) =>
+                    setModelConfig((prev) => ({
+                      ...prev,
+                      activationFunction: e.target.value,
+                    }))
+                  }
                   className="w-full px-3 py-2 border rounded-md"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 >
                   <option value="relu">ReLU</option>
                   <option value="sigmoid">Sigmoid</option>
@@ -428,7 +489,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
             {/* graphs */}
             <div className="flex flex-col lg:flex-row gap-6 justify-center items-center w-full">
               <div className="w-full lg:w-2/3 h-80 bg-gray-100 rounded-lg border-2 border-dashed p-4">
-                {trainingProgress.length > 0 ? (
+                {trainingState.trainingProgress.length > 0 ? (
                   <Line data={chartData} options={chartOptions} />
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -440,28 +501,33 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </div>
 
               <div className="w-full lg:w-1/3 h-80 bg-gray-100 rounded-lg border-2 border-dashed flex flex-col items-center justify-center p-4">
-                {isTraining ? (
+                {trainingState.isTraining ? (
                   <>
                     <div className="text-center mb-4">
                       <div className="text-6xl font-bold text-blue-600">
-                        {currentEpoch}
+                        {trainingState.currentEpoch}
                       </div>
-                      <div className="text-gray-600">/ {epochs} epochs</div>
+                      <div className="text-gray-600">
+                        / {hyperparameters.epochs} epochs
+                      </div>
                     </div>
-                    {trainingProgress.length > 0 && (
+                    {trainingState.trainingProgress.length > 0 && (
                       <div className="text-sm text-gray-600 space-y-1">
                         <div>
                           Loss:{" "}
-                          {trainingProgress[trainingProgress.length - 1].loss?.toFixed(
-                            4
-                          )}
+                          {trainingState.trainingProgress[
+                            trainingState.trainingProgress.length - 1
+                          ].loss?.toFixed(4)}
                         </div>
-                        {trainingProgress[trainingProgress.length - 1].accuracy && (
+                        {trainingState.trainingProgress[
+                          trainingState.trainingProgress.length - 1
+                        ].accuracy && (
                           <div>
                             Accuracy:{" "}
                             {(
-                              trainingProgress[trainingProgress.length - 1]
-                                .accuracy! * 100
+                              trainingState.trainingProgress[
+                                trainingState.trainingProgress.length - 1
+                              ].accuracy! * 100
                             ).toFixed(2)}
                             %
                           </div>
@@ -483,7 +549,9 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 <h3 className="font-bold text-gray-900 mb-2">Learning Rate</h3>
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>0.001</span>
-                  <span className="font-bold">{formatNumber(learningRate)}</span>
+                  <span className="font-bold">
+                    {formatNumber(hyperparameters.learningRate)}
+                  </span>
                   <span>0.1</span>
                 </div>
                 <input
@@ -491,10 +559,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   min="0.001"
                   max="0.1"
                   step="0.001"
-                  value={learningRate}
-                  onChange={(e) => setLearningRate(parseFloat(e.target.value))}
+                  value={hyperparameters.learningRate}
+                  onChange={(e) =>
+                    setHyperparameters((prev) => ({
+                      ...prev,
+                      learningRate: parseFloat(e.target.value),
+                    }))
+                  }
                   className="w-full accent-blue-600"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 />
               </div>
 
@@ -505,7 +578,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>0.0001</span>
                   <span className="font-bold">
-                    {formatNumber(regularizationRate)}
+                    {formatNumber(hyperparameters.regularizationRate)}
                   </span>
                   <span>0.01</span>
                 </div>
@@ -514,12 +587,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   min="0.0001"
                   max="0.01"
                   step="0.0001"
-                  value={regularizationRate}
+                  value={hyperparameters.regularizationRate}
                   onChange={(e) =>
-                    setRegularizationRate(parseFloat(e.target.value))
+                    setHyperparameters((prev) => ({
+                      ...prev,
+                      regularizationRate: parseFloat(e.target.value),
+                    }))
                   }
                   className="w-full accent-blue-600"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 />
               </div>
 
@@ -528,7 +604,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 <div className="flex justify-between text-sm text-gray-600 mb-1">
                   <span>60%</span>
                   <span className="font-bold">
-                    {Math.round(trainTestSplit * 100)}%
+                    {Math.round(hyperparameters.trainTestSplit * 100)}%
                   </span>
                   <span>90%</span>
                 </div>
@@ -537,10 +613,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   min="0.6"
                   max="0.9"
                   step="0.01"
-                  value={trainTestSplit}
-                  onChange={(e) => setTrainTestSplit(parseFloat(e.target.value))}
+                  value={hyperparameters.trainTestSplit}
+                  onChange={(e) =>
+                    setHyperparameters((prev) => ({
+                      ...prev,
+                      trainTestSplit: parseFloat(e.target.value),
+                    }))
+                  }
                   className="w-full accent-blue-600"
-                  disabled={isTraining}
+                  disabled={trainingState.isTraining}
                 />
               </div>
             </div>
@@ -552,19 +633,29 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   <h3 className="font-bold text-gray-600 mb-2">Layers</h3>
                   <div className="flex justify-center items-center space-x-3">
                     <button
-                      onClick={() => decrement(setNumLayers, numLayers)}
+                      onClick={() =>
+                        setHyperparameters((prev) => ({
+                          ...prev,
+                          numLayers: decrement(prev.numLayers),
+                        }))
+                      }
                       className="px-3 py-1 bg-gray-200 rounded-full font-bold disabled:opacity-50"
-                      disabled={isTraining}
+                      disabled={trainingState.isTraining}
                     >
                       -
                     </button>
                     <span className="text-lg font-semibold text-gray-600">
-                      {numLayers}
+                      {hyperparameters.numLayers}
                     </span>
                     <button
-                      onClick={() => increment(setNumLayers, numLayers)}
+                      onClick={() =>
+                        setHyperparameters((prev) => ({
+                          ...prev,
+                          numLayers: increment(prev.numLayers),
+                        }))
+                      }
                       className="px-3 py-1 bg-blue-600 text-white rounded-full font-bold disabled:opacity-50"
-                      disabled={isTraining}
+                      disabled={trainingState.isTraining}
                     >
                       +
                     </button>
@@ -575,19 +666,29 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   <h3 className="font-bold text-gray-600 mb-2">Neurons</h3>
                   <div className="flex justify-center items-center space-x-3">
                     <button
-                      onClick={() => decrement(setNumNeurons, numNeurons)}
+                      onClick={() =>
+                        setHyperparameters((prev) => ({
+                          ...prev,
+                          numNeurons: decrement(prev.numNeurons),
+                        }))
+                      }
                       className="px-3 py-1 bg-gray-200 rounded-full font-bold disabled:opacity-50"
-                      disabled={isTraining}
+                      disabled={trainingState.isTraining}
                     >
                       -
                     </button>
                     <span className="text-lg font-semibold text-gray-600">
-                      {numNeurons}
+                      {hyperparameters.numNeurons}
                     </span>
                     <button
-                      onClick={() => increment(setNumNeurons, numNeurons)}
+                      onClick={() =>
+                        setHyperparameters((prev) => ({
+                          ...prev,
+                          numNeurons: increment(prev.numNeurons),
+                        }))
+                      }
                       className="px-3 py-1 bg-indigo-600 text-white rounded-full font-bold disabled:opacity-50"
-                      disabled={isTraining}
+                      disabled={trainingState.isTraining}
                     >
                       +
                     </button>
@@ -598,17 +699,22 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   <h3 className="font-bold text-gray-600 mb-2">Epochs</h3>
                   <input
                     type="number"
-                    value={epochs}
-                    onChange={(e) => setEpochs(parseInt(e.target.value))}
+                    value={hyperparameters.epochs}
+                    onChange={(e) =>
+                      setHyperparameters((prev) => ({
+                        ...prev,
+                        epochs: parseInt(e.target.value),
+                      }))
+                    }
                     className="w-24 px-3 py-2 border rounded-md text-center"
                     min="1"
                     max="1000"
-                    disabled={isTraining}
+                    disabled={trainingState.isTraining}
                   />
                 </div>
 
                 <div>
-                  {!isTraining ? (
+                  {!trainingState.isTraining ? (
                     <button
                       onClick={handleStartTraining}
                       className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
@@ -628,11 +734,11 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
             </div>
 
             {/* model summary */}
-            {modelSummary && (
+            {trainingState.modelSummary && (
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-bold text-gray-900 mb-2">Model Architecture</h3>
                 <pre className="text-xs text-gray-700 overflow-x-auto">
-                  {modelSummary}
+                  {trainingState.modelSummary}
                 </pre>
               </div>
             )}
