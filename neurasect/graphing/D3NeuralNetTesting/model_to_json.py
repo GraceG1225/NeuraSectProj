@@ -59,7 +59,7 @@ def layer_to_json(layer):
     return cfg
 
 
-def export_model_json(model: Model, path="public/data/model.json"):
+def export_model_json(model: Model, path="public/data/model_new.json"):
     # Ensure weights exist (model built)
     if not model.built:
         # If you know your input shape, set it here
