@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 from graphDataGen import vizualize
-
+from model_to_json import export_model_json
 # -----------------------------
 # 1. Choose random layer sizes
 # -----------------------------
@@ -45,3 +45,4 @@ model.summary()
 print("\n")
 
 vizualize(model)
+export_model_json(model)
