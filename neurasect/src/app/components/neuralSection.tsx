@@ -15,8 +15,15 @@ interface NeuralSectionProps {
 }
 
 export default function NeuralSection({ datasets }: NeuralSectionProps) {
-  const EXPLAINABILITY_CONFIG_KEY = "explainability:modelConfig";
-  const [activeTab, setActiveTab] = useState<"config" | "training">("config");
+
+  const [selectedDataset, setSelectedDataset] = useState<string>("iris");
+  const [selectedModel, setSelectedModel] = useState<string>("neural_network");
+  const [selectedDataPreprocessing, setSelectedDataPreprocessing] =
+    useState<string>("none");
+  const [selectedRegularizer, setSelectedRegularizer] = useState<string>("l2");
+  const [selectedOptimizer, setSelectedOptimizer] = useState<string>("adam");
+  const [activationFunction, setActivationFunction] = useState<string>("relu");
+
 
   const [modelConfig, setModelConfig] = useState({
     selectedDataset: "iris",
@@ -153,18 +160,20 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       }));
 
       const config: TrainingConfig = {
-        dataset_id: modelConfig.selectedDataset,
-        model_type: modelConfig.selectedModel,
-        data_preprocessing: modelConfig.selectedDataPreprocessing,
-        num_layers: hyperparameters.numLayers,
-        num_neurons: hyperparameters.numNeurons,
-        learning_rate: hyperparameters.learningRate,
-        regularization_rate: hyperparameters.regularizationRate,
-        train_test_split: hyperparameters.trainTestSplit,
-        regularizer: modelConfig.selectedRegularizer,
-        optimizer: modelConfig.selectedOptimizer,
-        activation: modelConfig.activationFunction,
-        epochs: hyperparameters.epochs,
+
+        dataset_id: selectedDataset,
+        model_type: selectedModel,
+        data_preprocessing: selectedDataPreprocessing,
+        num_layers: numLayers,
+        num_neurons: numNeurons,
+        learning_rate: learningRate,
+        regularization_rate: regularizationRate,
+        train_test_split: trainTestSplit,
+        regularizer: selectedRegularizer,
+        optimizer: selectedOptimizer,
+        activation: activationFunction,
+        epochs: epochs,
+
         batch_size: 32,
       };
 
@@ -235,31 +244,210 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
           </p>
         </div>
 
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            {/* tab navigation */}
-            <div className="flex border-b">
-              <button
-                onClick={() => setActiveTab("config")}
-                className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors ${
-                  activeTab === "config"
-                    ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
+
+        <div className="flex flex-col items-center">
+          <div className="card p-6 bg-white shadow-md rounded-xl flex flex-col justify-center space-y-10 w-full max-w-5xl">
+            {/* upload section */}
+            <div className="grid grid-cols-2 gap-6 w-full">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-2">
+                  Upload Dataset (.csv)
+                </h3>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleUploadDataset}
+                  className="w-full border p-2 rounded-md"
+                  disabled={isTraining}
+                />
+                <div className="mt-2 text-sm text-gray-600">
+                  {localDatasets.length > 0 ? (
+                    localDatasets.map((d) => (
+                      <div
+                        key={d.id}
+                        className="mt-1 flex justify-between items-center"
+                      >
+                        <span>{d.id}</span>
+                        <button
+                          onClick={() => handleDeleteDataset(d.id)}
+                          className="text-red-500 text-sm"
+                          disabled={isTraining}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-400">No local datasets</div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-2">
+                  Upload Model (.onnx)
+                </h3>
+                <input
+                  type="file"
+                  accept=".onnx"
+                  onChange={handleUploadModel}
+                  className="w-full border p-2 rounded-md"
+                  disabled={isTraining}
+                />
+                <div className="mt-2 text-sm text-gray-600">
+                  {localModels.length > 0 ? (
+                    localModels.map((m) => (
+                      <div
+                        key={m.id}
+                        className="mt-1 flex justify-between items-center"
+                      >
+                        <span>{m.id}</span>
+                        <button
+                          onClick={() => handleDeleteModel(m.id)}
+                          className="text-red-500 text-sm"
+                          disabled={isTraining}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-gray-400">No local models</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* dataset and model selection */}
+            <div className="grid grid-cols-2 gap-6 w-full">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-2">Dataset</h3>
+                <select
+                  value={selectedDataset}
+                  onChange={(e) => setSelectedDataset(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  disabled={isTraining}
+                >
+                  <option value="">Select Dataset</option>
+                  {datasets?.length > 0 &&
+                    datasets.map((dataset) => (
+                      <option key={dataset.id} value={dataset.id}>
+                        {dataset.title}
+                      </option>
+                    ))}
+                  {localDatasets.length > 0 && <option disabled>──────────</option>}
+                  {localDatasets.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      (Local) {d.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-gray-900 mb-2">Model</h3>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  disabled={isTraining}
+                >
+                  <option value="neural_network">Neural Network</option>
+                  <option value="cnn">CNN</option>
+                  <option value="rnn">RNN</option>
+                  <option value="transformer">Transformer</option>
+                  {localModels.length > 0 && <option disabled>──────────</option>}
+                  {localModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      (Local) {m.id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+{/* // added: data preprocessing section */}
+            {/* data preprocessing */}
+            <div className="w-full">
+              <h3 className="font-bold text-gray-900 mb-2">Data Preprocessing</h3>
+              <select
+                value={selectedDataPreprocessing}
+                onChange={(e) => setSelectedDataPreprocessing(e.target.value)}
+                className="w-full max-w-xs px-3 py-2 border rounded-md"
+                disabled={isTraining}
               >
-                Configuration
-              </button>
-              <button
-                onClick={() => setActiveTab("training")}
-                className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
-                  activeTab === "training"
-                    ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                Training Progress
-                {trainingState.isTraining && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <option value="none">None</option>
+                <option value="standardize">Standardize</option>
+                <option value="normalize">Normalize</option>
+                <option value="minmax">Min-Max Scale</option>
+              </select>
+            </div>
+
+{/* // end of data preprocessing section  */}
+            {/* params */}
+            <div className="grid grid-cols-3 gap-6 w-full">
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">Regularizer</h3>
+                <select
+                  value={selectedRegularizer}
+                  onChange={(e) => setSelectedRegularizer(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  disabled={isTraining}
+                >
+                  <option value="none">None</option>
+                  <option value="l1">L1</option>
+                  <option value="l2">L2</option>
+                  <option value="dropout">Dropout</option>
+                  <option value="batch_norm">Batch Norm</option>
+                </select>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">Optimizer</h3>
+                <select
+                  value={selectedOptimizer}
+                  onChange={(e) => setSelectedOptimizer(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  disabled={isTraining}
+                >
+                  <option value="adam">Adam</option>
+                  <option value="sgd">SGD</option>
+                  <option value="rmsprop">RMSProp</option>
+                  <option value="adagrad">Adagrad</option>
+                  <option value="adamw">AdamW</option>
+                </select>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">Activation</h3>
+                <select
+                  value={activationFunction}
+                  onChange={(e) => setActivationFunction(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  disabled={isTraining}
+                >
+                  <option value="relu">ReLU</option>
+                  <option value="sigmoid">Sigmoid</option>
+                  <option value="tanh">Tanh</option>
+                  <option value="softmax">Softmax</option>
+                  <option value="leaky_relu">Leaky ReLU</option>
+                  <option value="elu">ELU</option>
+                </select>
+              </div>
+            </div>
+
+            {/* graphs */}
+            <div className="flex flex-col lg:flex-row gap-6 justify-center items-center w-full">
+              <div className="w-full lg:w-2/3 h-80 bg-gray-100 rounded-lg border-2 border-dashed p-4">
+                {trainingProgress.length > 0 ? (
+                  <Line data={chartData} options={chartOptions} />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-gray-500 text-lg">
+                      Start training to see live progress
+                    </p>
+                  </div>
+
                 )}
               </button>
             </div>
