@@ -46,6 +46,7 @@ class TrainingConfig(BaseModel):
     
     dataset_id: str
     model_type: str
+    data_preprocessing: Optional[str] = "none"
     num_layers: int
     num_neurons: int
     learning_rate: float

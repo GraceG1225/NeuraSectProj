@@ -42,6 +42,8 @@ interface NeuralSectionProps {
 export default function NeuralSection({ datasets }: NeuralSectionProps) {
   const [selectedDataset, setSelectedDataset] = useState<string>("iris");
   const [selectedModel, setSelectedModel] = useState<string>("neural_network");
+  const [selectedDataPreprocessing, setSelectedDataPreprocessing] =
+    useState<string>("none");
   const [selectedRegularizer, setSelectedRegularizer] = useState<string>("l2");
   const [selectedOptimizer, setSelectedOptimizer] = useState<string>("adam");
   const [activationFunction, setActivationFunction] = useState<string>("relu");
@@ -148,6 +150,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       const config: TrainingConfig = {
         dataset_id: selectedDataset,
         model_type: selectedModel,
+        data_preprocessing: selectedDataPreprocessing,
         num_layers: numLayers,
         num_neurons: numNeurons,
         learning_rate: learningRate,
@@ -373,6 +376,24 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               </div>
             </div>
 
+{/* // added: data preprocessing section */}
+            {/* data preprocessing */}
+            <div className="w-full">
+              <h3 className="font-bold text-gray-900 mb-2">Data Preprocessing</h3>
+              <select
+                value={selectedDataPreprocessing}
+                onChange={(e) => setSelectedDataPreprocessing(e.target.value)}
+                className="w-full max-w-xs px-3 py-2 border rounded-md"
+                disabled={isTraining}
+              >
+                <option value="none">None</option>
+                <option value="standardize">Standardize</option>
+                <option value="normalize">Normalize</option>
+                <option value="minmax">Min-Max Scale</option>
+              </select>
+            </div>
+
+{/* // end of data preprocessing section  */}
             {/* params */}
             <div className="grid grid-cols-3 gap-6 w-full">
               <div>

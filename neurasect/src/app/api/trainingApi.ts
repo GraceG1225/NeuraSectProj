@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export interface TrainingConfig {
   dataset_id: string;
   model_type: string;
+  data_preprocessing?: string;
   num_layers: number;
   num_neurons: number;
   learning_rate: number;

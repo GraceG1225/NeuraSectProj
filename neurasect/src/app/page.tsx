@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import NeuralNetworkSection from "./components/neuralSection";
@@ -18,7 +18,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   const bubbleColors = useMemo(
-    () => theme.bubbleColors ?? ["rgba(191, 219, 254, 0.6)", "rgba(216, 180, 254, 0.55)", "rgba(244, 231, 255, 0.55)"],
+    () =>
+      theme.bubbleColors ?? [
+        "rgba(191, 219, 254, 0.6)",
+        "rgba(216, 180, 254, 0.55)",
+        "rgba(244, 231, 255, 0.55)",
+      ],
     [theme.bubbleColors],
   );
 
@@ -38,10 +43,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundImage: theme.background }}
-    >
+    <div className="min-h-screen" style={{ backgroundImage: theme.background }}>
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="container mx-auto px-4 py-20">
@@ -111,7 +113,7 @@ export default function Home() {
       <section id="training">
         <NeuralNetworkSection datasets={datasets} />
       </section>
-       
+
       {/* Datasets Section */}
       <section id="datasets" className="py-20 bg-white">
         <DatasetsSection />
@@ -134,16 +136,16 @@ export default function Home() {
             <Link
               href="/explainability"
               className="btn border-2 border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4 transition-all duration-300"
-              >
+            >
               <FaRegQuestionCircle />
               &nbsp;Learn the Basics
             </Link>
             <Link
               href="/settings"
               className="btn border-2 border-white text-white hover:bg-white hover:text-blue-600 text-lg px-8 py-4 transition-all duration-300"
-              >
-                &nbsp;Customize Themes
-              </Link>
+            >
+              &nbsp;Customize Themes
+            </Link>
           </div>
         </div>
       </section>
