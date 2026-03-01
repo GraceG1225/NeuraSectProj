@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { supabase } from '../../lib/supabaseClient';
-import { IoIosArrowBack } from 'react-icons/io';
-import Link from 'next/link';
-import { useTheme } from '../../components/theme/themeContext';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { supabase } from "../../lib/supabaseClient";
+import { IoIosArrowBack } from "react-icons/io";
+import Link from "next/link";
+import { useTheme } from "../../components/theme/themeContext";
 
 interface Dataset {
     id: string;
@@ -22,9 +22,9 @@ export default function DatasetPage() {
     useEffect(() => {
     async function fetchData() {
         const { data, error } = await supabase
-            .from('datasets')
-            .select('*')
-            .eq('id', id)
+            .from("datasets")
+            .select("*")
+            .eq("id", id)
             .single();
 
         if (error) {
@@ -34,13 +34,13 @@ export default function DatasetPage() {
 
     setDataset(data);
 
-    const tableNames = ['iris', 'boston', 'youtube', 'insurance', 'carsales'];
+    const tableNames = ["iris", "boston", "youtube", "insurance", "carsales"];
     const results = await Promise.all(
         tableNames.map(async (tableName) => {
             const { data: tableData } = await supabase
                 .from(tableName as any)
-                .select('*')
-                .eq('dataset_id', id);
+                .select("*")
+                .eq("dataset_id", id);
             return { tableName, data: tableData || [] };
         })
     );
@@ -141,7 +141,7 @@ export default function DatasetPage() {
                         <tr
                             key={i}
                             className={`hover:bg-blue-50 transition ${
-                            i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                            i % 2 === 0 ? "bg-white" : "bg-gray-50"
                             }`}
                         >
                         {Object.keys(row).map((key) => (

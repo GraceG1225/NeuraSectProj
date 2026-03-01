@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export interface TrainingConfig {
   dataset_id: string;
   model_type: string;
+  data_preprocessing?: string;
   num_layers: number;
   num_neurons: number;
   learning_rate: number;
@@ -50,7 +51,6 @@ export async function startTraining(config: TrainingConfig): Promise<TrainingRes
     const error = await response.json();
     throw new Error(error.detail || 'Failed to start training');
   }
-
   return response.json();
 }
 
@@ -77,17 +77,15 @@ export function connectTrainingWebSocket(
     console.log('WebSocket connection closed');
     if (onClose) onClose();
   };
-
   return ws;
 }
 
 export async function getTrainingStatus(sessionId: string) {
   const response = await fetch(`${API_BASE_URL}/api/train/${sessionId}/status`);
-  
+
   if (!response.ok) {
     throw new Error('Failed to get training status');
   }
-  
   return response.json();
 }
 
@@ -104,7 +102,6 @@ export async function makePredictions(sessionId: string, data: number[][]) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to make predictions');
   }
-
   return response.json();
 }
 
@@ -116,7 +113,6 @@ export async function deleteSession(sessionId: string) {
   if (!response.ok) {
     throw new Error('Failed to delete session');
   }
-
   return response.json();
 }
 
