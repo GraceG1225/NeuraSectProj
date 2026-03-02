@@ -72,7 +72,7 @@ def export_model_json(model: Model, path="public/data/model_new.json"):
     }
 
     with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=4)
 
     return data
 
