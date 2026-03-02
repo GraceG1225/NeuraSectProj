@@ -3,23 +3,23 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 
-# Returns array of nodes in a layer
-def extract_nodes(model: Model):
-    nodes = []
+# Returns array of layers in a layer
+def extract_layers(model: Model):
+    layers = []
 
     for layer in model.layers:
         if hasattr(layer, 'units'):
-            nodes.append(layer.units)
+            layers.append(layer.units)
 
-    print("Nodes:")
-    print(nodes)
+    print("layers:")
+    print(layers)
     print("\n")
-    return np.array(nodes, dtype=int)
+    return np.array(layers, dtype=int)
 
-def extract_weights(model: Model, nodes):
+def extract_weights(model: Model, layers):
     weights = []
 
-    for i in range(len(nodes) - 1):
+    for i in range(len(layers) - 1):
 
         kernel = model.layers[i + 1].get_weights()[0]  # kernel matrix
         print(f"Layer {i+1} weight:")
@@ -29,22 +29,22 @@ def extract_weights(model: Model, nodes):
 
     return weights
 
-def create_data(nodes, weights):
+def create_data(layers, weights):
     data = {
-        "nodes": nodes.tolist(),   # ← convert here
+        "layers": layers.tolist(),   # ← convert here
         "weights": weights
     }
     return data
 
 def vizualize(model: Model):
 
-    nodes = [] 
+    layers = [] 
     weights = []
 
-    nodes = extract_nodes(model)
-    weights = extract_weights(model, nodes)
+    layers = extract_layers(model)
+    weights = extract_weights(model, layers)
 
-    data = create_data(nodes, weights)
+    data = create_data(layers, weights)
 
     with open("public/data/model.json", "w") as f:
         json.dump(data, f, indent=4)
