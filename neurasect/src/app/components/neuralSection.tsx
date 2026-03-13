@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { saveFile, getAllFiles, deleteFile } from "../lib/indexedDBHelpers";
-import { startTraining, connectTrainingWebSocket, TrainingConfig, EpochUpdate } from "../api/trainingApi";
+import { startTraining, connectTrainingWebSocket, uploadDataset, TrainingConfig, EpochUpdate } from "../api/trainingApi";
 import { AccuracyChart } from "./accuracyChart";
 
 interface Dataset {
@@ -57,6 +57,8 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     trainingProgress: [] as EpochUpdate[],
     modelSummary: "",
   });
+
+  const [uploadingDataset, setUploadingDataset] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -118,12 +120,33 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
   async function handleUploadDataset(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     if (!file.name.endsWith(".csv")) {
       alert("Only .csv datasets allowed.");
       return;
     }
-    await saveFile("datasets", file.name, file);
-    await refreshLocalFiles();
+
+    setUploadingDataset(true);
+    try {
+      const response = await uploadDataset(file);
+
+      setModelConfig((prev) => {
+        const updated = { ...prev, selectedDataset: response.dataset_id };
+        return updated;
+      });
+
+      const cleanFileName = `${response.dataset_id}.csv`;
+      const cleanFile = new File([file], cleanFileName, { type: 'text/csv' });
+      await saveFile("datasets", response.dataset_id, cleanFile);
+      await refreshLocalFiles();
+      
+      alert(`Dataset uploaded successfully!\n\nRows: ${response.shape[0]}\nFeatures: ${response.shape[1]}\nClasses: ${response.num_classes}\n\nDataset ID: ${response.dataset_id}`);
+    } catch (error: any) {
+      console.error('❌ Upload error:', error);
+      alert(`Failed to upload dataset: ${error.message}`);
+    } finally {
+      setUploadingDataset(false);
+    }
   }
 
   async function handleUploadModel(e: React.ChangeEvent<HTMLInputElement>) {
@@ -153,7 +176,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       return;
     }
     if (!modelConfig.selectedDataset) {
-      alert("Please select a dataset first!");
+      alert("Please select or upload a dataset first!");
       return;
     }
 
@@ -492,7 +515,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                           )}
                           {localFiles.datasets.map((d) => (
                             <option key={d.id} value={d.id}>
-                              (Local) {d.id}
+                              (Uploaded) {d.id}
                             </option>
                           ))}
                         </select>
@@ -505,15 +528,19 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                           accept=".csv"
                           onChange={handleUploadDataset}
                           className="w-full text-sm text-gray-500"
-                          disabled={trainingState.isTraining}
+                          disabled={trainingState.isTraining || uploadingDataset}
                         />
+                        {uploadingDataset && (
+                          <p className="text-xs text-blue-600 mt-1">Uploading...</p>
+                        )}
                       </div>
                     </div>
 
                     {localFiles.datasets.length > 0 && (
                       <div className="mt-4 space-y-2">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Uploaded Datasets:</p>
                         {localFiles.datasets.map((d) => (
-                          <div key={d.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
+                          <div key={d.id} className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-200">
                             <span className="text-sm text-gray-700">{d.id}</span>
                             <button
                               onClick={() => handleDeleteDataset(d.id)}

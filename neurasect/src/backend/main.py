@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import tensorflow as tf
@@ -13,6 +13,7 @@ import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import threading
+import io
 
 load_dotenv()
 
@@ -41,6 +42,8 @@ if SUPABASE_URL and SUPABASE_KEY:
 else:
     print("Supabase credentials not found in environment")
     print("Only local datasets will be available")
+
+uploaded_datasets: Dict[str, tuple] = {}
 
 class TrainingConfig(BaseModel):
     model_config = {"protected_namespaces": ()}
@@ -100,22 +103,26 @@ def get_regularizer(regularizer_name: str, rate: float):
 def build_model(input_shape, output_shape, num_layers, num_neurons, activation, regularizer, regularization_rate):
     model = keras.Sequential()
     kernel_reg = get_regularizer(regularizer, regularization_rate) if regularizer not in ["none", "dropout", "batch_norm"] else None
+
     model.add(keras.layers.Input(shape=(input_shape,)))
     model.add(keras.layers.Dense(num_neurons, activation=activation, kernel_regularizer=kernel_reg))
     if regularizer == "dropout":
         model.add(keras.layers.Dropout(regularization_rate))
     elif regularizer == "batch_norm":
         model.add(keras.layers.BatchNormalization())
+
     for i in range(num_layers - 1):
         model.add(keras.layers.Dense(num_neurons, activation=activation, kernel_regularizer=kernel_reg))
         if regularizer == "dropout":
             model.add(keras.layers.Dropout(regularization_rate))
         elif regularizer == "batch_norm":
             model.add(keras.layers.BatchNormalization())
+
     if output_shape == 1:
         model.add(keras.layers.Dense(1))
     else:
         model.add(keras.layers.Dense(output_shape, activation="softmax"))
+
     return model
 
 def get_model_summary(model: keras.Model) -> str:
@@ -124,6 +131,12 @@ def get_model_summary(model: keras.Model) -> str:
     return "\n".join(string_list)
 
 def load_dataset(dataset_id: str):
+    if dataset_id in uploaded_datasets:
+        X, y = uploaded_datasets[dataset_id]
+        unique_values = len(np.unique(y))
+        print(f"Loaded uploaded dataset: {dataset_id} (shape: {X.shape})")
+        return X, y, unique_values if unique_values < 20 else 1
+    
     if supabase_client:
         try:
             if len(dataset_id) > 10 and "-" in dataset_id:
@@ -140,15 +153,11 @@ def load_dataset(dataset_id: str):
         data = fetch_california_housing()
         return data.data, data.target, 1
 
-    csv_path = f"./datasets/{dataset_id}.csv"
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-        X = df.iloc[:, :-1].values
-        y = df.iloc[:, -1].values
-        unique_values = len(np.unique(y))
-        return X, y, unique_values if unique_values < 20 else 1
-
-    raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+    print(f"Dataset not found!")
+    raise HTTPException(
+        status_code=404, 
+        detail=f"Dataset '{dataset_id}' not found. Upload it first."
+    )
 
 def load_supabase_dataset(dataset_id: str):
     if not supabase_client:
@@ -222,6 +231,71 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
+@app.post("/api/upload/dataset")
+async def upload_dataset(file: UploadFile = File(...)):
+    try:
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(status_code=400, detail="Only CSV files are allowed")
+        
+        contents = await file.read()
+        
+        encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252', 'ascii']
+        df = None
+        used_encoding = None
+        
+        for encoding in encodings:
+            try:
+                df = pd.read_csv(io.StringIO(contents.decode(encoding)))
+                used_encoding = encoding
+                break
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+        
+        if df is None:
+            raise HTTPException(status_code=400, detail="Could not decode CSV file. Try saving with UTF-8 encoding.")
+        
+        if df.shape[1] < 2:
+            raise HTTPException(status_code=400, detail="Dataset must have at least 2 columns (features + target)")
+        
+        dataset_id = file.filename.rsplit('.', 1)[0]
+
+        X_df = df.iloc[:, :-1].copy()
+        y = df.iloc[:, -1].values
+
+        from sklearn.preprocessing import LabelEncoder
+        for col in X_df.columns:
+            if X_df[col].dtype in ("object", "string"):
+                le = LabelEncoder()
+                X_df[col] = le.fit_transform(X_df[col].astype(str))
+
+        try:
+            X = X_df.values.astype(float)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Could not convert features to numbers: {str(e)}")
+        
+        try:
+            y = pd.to_numeric(y)
+        except:
+            print(f"   Converting target column to numeric...")
+            le = LabelEncoder()
+            y = le.fit_transform(y.astype(str))
+
+        uploaded_datasets[dataset_id] = (X, y)
+        
+        num_classes = len(np.unique(y))
+        
+        return {
+            "dataset_id": dataset_id,
+            "message": f"Dataset uploaded successfully",
+            "shape": list(X.shape),
+            "num_classes": num_classes
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error processing dataset: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing dataset: {str(e)}")
+
 @app.post("/api/train/start", response_model=TrainingResponse)
 async def start_training(config: TrainingConfig):
     try:
@@ -263,6 +337,9 @@ async def start_training(config: TrainingConfig):
             output_shape=[num_classes] if num_classes > 1 else [1]
         )
     except Exception as e:
+        import traceback
+        print(f"\nERROR in start_training:")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws/train/{session_id}")
