@@ -12,6 +12,8 @@ from datetime import datetime
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import import_ipynb
+from MLPClass import MLP
 
 load_dotenv()
 
@@ -47,7 +49,7 @@ class TrainingConfig(BaseModel):
     dataset_id: str
     model_type: str
     num_layers: int
-    num_neurons: int
+    num_neurons: int # has to be a list  
     learning_rate: float
     regularization_rate: float
     train_test_split: float
@@ -98,48 +100,17 @@ def get_regularizer(regularizer_name: str, rate: float):
 def build_model(
     input_shape: int,
     output_shape: int,
-    num_layers: int,
-    num_neurons: int,
+    num_of_layers: int,
+    num_neurons_per_layer: list,
     activation: str,
     regularizer: str,
     regularization_rate: float
 ) -> keras.Model:
-    
-    model = keras.Sequential()
-    
-    kernel_reg = get_regularizer(regularizer, regularization_rate) if regularizer not in ['none', 'dropout', 'batch_norm'] else None
-    
-    model.add(keras.layers.Input(shape=(input_shape,)))
-    
-    model.add(keras.layers.Dense(
-        num_neurons,
-        activation=activation,
-        kernel_regularizer=kernel_reg
-    ))
 
-    if regularizer == 'dropout':
-        model.add(keras.layers.Dropout(regularization_rate))
-    elif regularizer == 'batch_norm':
-        model.add(keras.layers.BatchNormalization())
-
-    for i in range(num_layers - 1):
-        model.add(keras.layers.Dense(
-            num_neurons,
-            activation=activation,
-            kernel_regularizer=kernel_reg
-        ))
-        
-        if regularizer == 'dropout':
-            model.add(keras.layers.Dropout(regularization_rate))
-        elif regularizer == 'batch_norm':
-            model.add(keras.layers.BatchNormalization())
-    
-    if output_shape == 1:
-        model.add(keras.layers.Dense(1))
-    else:
-        model.add(keras.layers.Dense(output_shape, activation='softmax'))
-    
+    model_instance  = MLP(input_shape=input_shape,output_shape=output_shape,num_of_layers=num_of_layers,num_neurons_per_layer,activation)
+    model = bu
     return model
+    
 
 def get_model_summary(model: keras.Model) -> str:
     string_list = []
@@ -316,8 +287,8 @@ async def start_training(config: TrainingConfig):
         model = build_model(
             input_shape=X_train.shape[1],
             output_shape=num_classes,
-            num_layers=config.num_layers,
-            num_neurons=config.num_neurons,
+            num_of_layers=config.num_layers,
+            num_neurons_per_layer=config.num_neurons, # has to be a list; verify in config
             activation=config.activation,
             regularizer=config.regularizer,
             regularization_rate=config.regularization_rate
