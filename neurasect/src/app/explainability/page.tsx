@@ -1,9 +1,19 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { useTheme } from "../components/theme/themeContext";
 
 export default function ExplainabilityPage() {
   const { theme } = useTheme("explainability");
+  const [comparisonCount, setComparisonCount] = useState<number>(1);
+
+  const handleAddComparison = () => {
+    setComparisonCount((prev) => Math.min(prev + 1, 4));
+  };
+
+  const handleRemoveComparison = () => {
+    setComparisonCount((prev) => Math.max(prev - 1, 1));
+  };
 
   return (
     <div
@@ -140,15 +150,76 @@ export default function ExplainabilityPage() {
                 </p>
               </div>
             </div>
-            <h2 className="py-10 text-3xl font-bold text-gray-900 mb-8">
+            <h2 className="py-10 text-3xl font-bold text-gray-900 mb-6">
               Model Explainability
             </h2>
 
-            {/* Placeholder for explainability content */}
-            <div className="bg-gray-50 rounded-lg p-8 border-2 border-dashed border-gray-300">
-              <p className="text-center text-gray-500">
-                Explainability content will go here
-              </p>
+            {/* Explainability comparison controls */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <div className="px-4 py-2 rounded-full border border-gray-300 bg-white text-sm font-semibold text-gray-800 shadow-sm">
+                Explainability
+              </div>
+              <span className="text-lg font-semibold text-gray-700">
+                {comparisonCount}
+              </span>
+              <div className="px-4 py-2 rounded-full border border-gray-300 bg-white text-sm font-semibold text-gray-800 shadow-sm">
+                Comparison
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveComparison}
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-gray-300 bg-white text-lg font-bold text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                disabled={comparisonCount === 1}
+                aria-label="Remove explainability panel"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={handleAddComparison}
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-indigo-500 bg-indigo-500 text-lg font-bold text-white hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                disabled={comparisonCount === 4}
+                aria-label="Add explainability panel"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Explainability comparison grid */}
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 md:p-6">
+              <div
+                className={`grid gap-4 md:gap-6`}
+                style={{
+                  gridTemplateColumns: `repeat(${comparisonCount}, minmax(0, 1fr))`,
+                }}
+              >
+                {Array.from({ length: comparisonCount }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-lg border border-gray-200 p-4 md:p-5 shadow-sm flex flex-col"
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Explainability {index + 1}
+                      </h3>
+                      <span className="text-xs uppercase tracking-wide text-gray-400">
+                        View
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 flex-1">
+                      <p className="mb-2">
+                        This panel can display explainability output such as
+                        feature importances, saliency maps, or SHAP values for a
+                        selected model run.
+                      </p>
+                      <p>
+                        Use the + button above to add more panels and compare
+                        different model configurations side by side.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
