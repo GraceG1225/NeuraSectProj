@@ -49,7 +49,8 @@ class TrainingConfig(BaseModel):
     dataset_id: str
     model_type: str
     num_layers: int
-    num_neurons: int # has to be a list  
+    # num_neurons: int   # previously int
+    num_neurons: list # has to be a list  
     learning_rate: float
     regularization_rate: float
     train_test_split: float
@@ -101,14 +102,14 @@ def build_model(
     input_shape: int,
     output_shape: int,
     num_of_layers: int,
-    num_neurons_per_layer: list,
+    num_of_neurons_per_layer: list,
     activation: str,
     regularizer: str,
     regularization_rate: float
 ) -> keras.Model:
 
-    model_instance  = MLP(input_shape=input_shape,output_shape=output_shape,num_of_layers=num_of_layers,num_neurons_per_layer,activation)
-    model = bu
+    model_instance  = MLP(input_shape=input_shape,output_shape=output_shape,num_of_layers=num_of_layers,num_of_neurons_per_layer=num_of_neurons_per_layer,activation=activation)
+    model = model_instance.tf_build()
     return model
     
 
@@ -241,7 +242,7 @@ def load_supabase_dataset(dataset_id: str):
         print(f"Error loading Supabase dataset: {e}")
         raise HTTPException(status_code=500, detail=f"Error loading dataset: {str(e)}")
 
-def prepare_data(X, y, train_test_split: float):
+def prepare_data(X, y, train_test_split: float):  # this is to be edited to fit Siri's Data Preprocessing suite
     from sklearn.model_selection import train_test_split as sklearn_split
     from sklearn.preprocessing import StandardScaler
 
@@ -288,7 +289,7 @@ async def start_training(config: TrainingConfig):
             input_shape=X_train.shape[1],
             output_shape=num_classes,
             num_of_layers=config.num_layers,
-            num_neurons_per_layer=config.num_neurons, # has to be a list; verify in config
+            num_of_neurons_per_layer=config.num_neurons, # has to be a list; verify in config
             activation=config.activation,
             regularizer=config.regularizer,
             regularization_rate=config.regularization_rate
