@@ -1,21 +1,114 @@
 "use client";
 import Link from "next/link";
 
-import { useState } from "react";
+
 import { useTheme } from "../components/theme/themeContext";
 
-const MOCK_FEATURE_IMPORTANCE = [
-  { name: "Feature A", value: 0.32 },
-  { name: "Feature B", value: 0.24 },
-  { name: "Feature C", value: 0.18 },
-  { name: "Feature D", value: 0.14 },
-  { name: "Feature E", value: 0.12 },
-];
+const EXPLAINABILITY_CONFIG_KEY = "explainability:modelConfig";
+
+type ModelConfig = {
+  dataset: string;
+  datasetName: string;
+  model: string;
+  regularizer: string;
+  optimizer: string;
+  activation: string;
+};
+
+const DEFAULT_MODEL_CONFIG: ModelConfig = {
+  dataset: "iris",
+  datasetName: "Iris",
+  model: "neural_network",
+  regularizer: "dropout",
+  optimizer: "adam",
+  activation: "relu",
+};
+
+const toLabel = (value: string) =>
+  value
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 
 export default function ExplainabilityPage() {
   const { theme } = useTheme("explainability");
-  const [activeTab, setActiveTab] = useState<"feature" | "whatif" | "comparison">("feature");
   const [comparisonCount, setComparisonCount] = useState(1);
+  const [selectedId, setSelectedId] = useState("");
+  const [comparisonMethods, setComparisonMethods] = useState<string[]>([
+    "A",
+    "A",
+    "A",
+    "A",
+  ]);
+  const [inputImages, setInputImages] = useState<(string | null)[]>([
+    null,
+    null,
+    null,
+    null,
+  ]);
+  const [modifiedImages, setModifiedImages] = useState<(string | null)[]>([
+    null,
+    null,
+    null,
+    null,
+  ]);
+  const [modelConfig, setModelConfig] = useState<ModelConfig>(DEFAULT_MODEL_CONFIG);
+
+  const updateImageAtIndex = (
+    setter: Dispatch<SetStateAction<(string | null)[]>>,
+    index: number,
+    file: File | null
+  ) => {
+    setter((prev) => {
+      const next = [...prev];
+      if (next[index]) {
+        URL.revokeObjectURL(next[index]!);
+      }
+      next[index] = file ? URL.createObjectURL(file) : null;
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const loadConfig = () => {
+      const raw = localStorage.getItem(EXPLAINABILITY_CONFIG_KEY);
+      if (!raw) return;
+
+      try {
+        const parsed = JSON.parse(raw) as Partial<ModelConfig>;
+        setModelConfig({
+          dataset: parsed.dataset || DEFAULT_MODEL_CONFIG.dataset,
+          datasetName: parsed.datasetName || DEFAULT_MODEL_CONFIG.datasetName,
+          model: parsed.model || DEFAULT_MODEL_CONFIG.model,
+          regularizer: parsed.regularizer || DEFAULT_MODEL_CONFIG.regularizer,
+          optimizer: parsed.optimizer || DEFAULT_MODEL_CONFIG.optimizer,
+          activation: parsed.activation || DEFAULT_MODEL_CONFIG.activation,
+        });
+      } catch {
+        setModelConfig(DEFAULT_MODEL_CONFIG);
+      }
+    };
+
+    loadConfig();
+    window.addEventListener("storage", loadConfig);
+    window.addEventListener("explainability-config-updated", loadConfig);
+
+    return () => {
+      window.removeEventListener("storage", loadConfig);
+      window.removeEventListener("explainability-config-updated", loadConfig);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      inputImages.forEach((imageUrl) => {
+        if (imageUrl) URL.revokeObjectURL(imageUrl);
+      });
+      modifiedImages.forEach((imageUrl) => {
+        if (imageUrl) URL.revokeObjectURL(imageUrl);
+      });
+    };
+  }, [inputImages, modifiedImages]);
 
 
   return (
@@ -182,85 +275,58 @@ export default function ExplainabilityPage() {
               Model Explainability
             </h2>
 
+            <div className="flex flex-wrap gap-3 mb-6">
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Dataset Selected: {modelConfig.datasetName || toLabel(modelConfig.dataset)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Model: {toLabel(modelConfig.model)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Regularizer: {toLabel(modelConfig.regularizer)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Optimizer: {toLabel(modelConfig.optimizer)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Activation: {toLabel(modelConfig.activation).toUpperCase()}
+              </span>
 
-            {/* Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              {(
-                [
-                  { id: "feature", label: "Feature importance" },
-                  { id: "whatif", label: "What-if" },
-                  { id: "comparison", label: "Comparison" },
-                ] as const
-              ).map(({ id, label }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setActiveTab(id)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    activeTab === id
-                      ? "bg-indigo-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
             </div>
 
-            {/* Tab content */}
-            {activeTab === "feature" && (
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Top features (example)
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Longer bars = higher impact on the model&apos;s prediction. Use real
-                  training data later to show actual feature importances.
-                </p>
-                <div className="space-y-3 max-w-md">
-                  {MOCK_FEATURE_IMPORTANCE.map(({ name, value }) => (
-                    <div key={name} className="flex items-center gap-3">
-                      <span className="w-24 text-sm font-medium text-gray-700 shrink-0">
-                        {name}
-                      </span>
-                      <div className="flex-1 h-6 bg-gray-200 rounded overflow-hidden">
-                        <div
-                          className="h-full bg-indigo-500 rounded"
-                          style={{ width: `${value * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-gray-500 w-10">
-                        {(value * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  ))}
+            <>
+                {/* Input controls */}
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <button
+                    type="button"
+                    className="px-5 py-2.5 rounded-lg font-semibold text-white bg-pink-500 hover:bg-pink-600 transition-colors"
+                  >
+                    Randomized Example
+                  </button>
+                  <label
+                    htmlFor="comparison-id"
+                    className="px-4 py-2.5 rounded-lg font-semibold text-white bg-pink-500"
+                  >
+                    ID :
+                  </label>
+                  <input
+                    id="comparison-id"
+                    type="text"
+                    value={selectedId}
+                    onChange={(e) => setSelectedId(e.target.value)}
+                    placeholder="input"
+                    className="w-36 px-3 py-2.5 rounded-lg border border-pink-300 bg-white text-gray-800 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                  />
                 </div>
-              </div>
-            )}
 
-            {activeTab === "whatif" && (
-              <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  What-if analysis
-                </h3>
-                <p className="text-gray-700">
-                  Change input values (e.g. one feature) and see how the prediction
-                  changes. This helps you understand sensitivity and fairness. Connect
-                  this view to your trained model and a single sample to enable
-                  real what-if exploration.
-                </p>
-              </div>
-            )}
-
-            {activeTab === "comparison" && (
-              <>
                 {/* Comparison controls */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <span className="px-3 py-1.5 rounded-full border border-gray-300 bg-white text-sm font-semibold text-gray-800">
-                    Explainability
 
-                  <span className="px-3 py-1.5 rounded-full border border-gray-300 bg-white text-sm font-semibold text-gray-800">
                     Comparison
+                  </span>
+                  <span className="text-lg font-semibold text-gray-700">
+                    {comparisonCount}
                   </span>
 
                   <button
@@ -283,12 +349,7 @@ export default function ExplainabilityPage() {
                   </button>
                 </div>
 
-                <div
-                  className="grid gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4"
-                  style={{
-                    gridTemplateColumns: `repeat(${comparisonCount}, minmax(0, 1fr))`,
-                  }}
-                >
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
 
                   {Array.from({ length: comparisonCount }).map((_, i) => (
                     <div
@@ -297,18 +358,108 @@ export default function ExplainabilityPage() {
                     >
                       <h4 className="font-semibold text-gray-900 mb-2">
 
-                        Explainability {i + 1}
+                        Explainability {i + 1} (Method {comparisonMethods[i]})
+
                       </h4>
+
+                      <div className="flex items-center gap-3 mb-3">
+                        <label className="text-sm font-semibold text-gray-700">
+                          Explainability Method
+                        </label>
+                        <select
+                          value={comparisonMethods[i]}
+                          onChange={(e) =>
+                            setComparisonMethods((prev) => {
+                              const next = [...prev];
+                              next[i] = e.target.value;
+                              return next;
+                            })
+                          }
+                          className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        >
+                          {["A", "B", "C", "D"].map((method) => (
+                            <option key={method} value={method}>
+                              {method}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
                       <p className="text-sm text-gray-600">
-                        Use this panel to compare different runs (e.g. different
-                        models or preprocessing). Load a session or dataset to see
-                        feature importance or SHAP here.
+                        Use this panel to compare different runs. ID input:
+                        {" "}
+                        {selectedId || "none"}
+                        . Randomized Example is currently a placeholder button.
                       </p>
+
+                      <div className="mt-4 flex flex-row gap-4 items-start">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <label className="block text-sm font-semibold text-gray-700 text-center">
+                            Input Image
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              updateImageAtIndex(
+                                setInputImages,
+                                i,
+                                e.target.files?.[0] || null
+                              )
+                            }
+                            className="w-full text-sm text-gray-700"
+                          />
+                          <div className="h-64 rounded-lg border border-gray-200 bg-sky-50 flex items-center justify-center overflow-hidden">
+                            {inputImages[i] ? (
+                              <img
+                                src={inputImages[i] as string}
+                                alt={`Input preview ${i + 1}`}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <span className="text-sm text-gray-500">No input image</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="w-px self-stretch bg-gray-300"></div>
+
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <label className="block text-sm font-semibold text-gray-700 text-center">
+                            Modified / Comparison Image
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              updateImageAtIndex(
+                                setModifiedImages,
+                                i,
+                                e.target.files?.[0] || null
+                              )
+                            }
+                            className="w-full text-sm text-gray-700"
+                          />
+                          <div className="h-64 rounded-lg border border-gray-200 bg-sky-50 flex items-center justify-center overflow-hidden">
+                            {modifiedImages[i] ? (
+                              <img
+                                src={modifiedImages[i] as string}
+                                alt={`Modified preview ${i + 1}`}
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <span className="text-sm text-gray-500">
+                                No comparison image
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
+
+            </>
 
           </div>
         </div>
