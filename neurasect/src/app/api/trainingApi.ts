@@ -38,6 +38,32 @@ export interface EpochUpdate {
   epochs?: number;
 }
 
+export interface UploadResponse {
+  dataset_id: string;
+  message: string;
+  shape: number[];
+  num_classes: number;
+}
+
+export async function uploadDataset(file: File): Promise<UploadResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/upload/dataset`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to upload dataset');
+  }
+
+  const data = await response.json();
+  console.log('Dataset uploaded successfully:', data);
+  return data;
+}
+
 export async function startTraining(config: TrainingConfig): Promise<TrainingResponse> {
   const response = await fetch(`${API_BASE_URL}/api/train/start`, {
     method: 'POST',
