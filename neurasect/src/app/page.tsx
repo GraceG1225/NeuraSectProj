@@ -18,7 +18,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   const bubbleColors = useMemo(
-    () => theme.bubbleColors ?? ["rgba(191, 219, 254, 0.6)", "rgba(216, 180, 254, 0.55)", "rgba(244, 231, 255, 0.55)"],
+    () =>
+      theme.bubbleColors ?? [
+        "rgba(191, 219, 254, 0.6)",
+        "rgba(216, 180, 254, 0.55)",
+        "rgba(244, 231, 255, 0.55)",
+      ],
     [theme.bubbleColors],
   );
 
