@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import Link from "next/link";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useTheme } from "../components/theme/themeContext";
@@ -244,7 +244,32 @@ export default function ExplainabilityPage() {
                 </p>
               </div>
             </div>
-            <h2 className="py-10 text-3xl font-bold text-gray-900 mb-8">
+
+            {/* Explainability 101 */}
+            <h2 className="py-10 text-3xl font-bold text-gray-900 mb-4">
+              Explainability 101
+            </h2>
+            <div className="mb-10 p-6 bg-indigo-50/60 rounded-xl border border-indigo-100 text-gray-700 text-lg leading-relaxed space-y-4">
+              <p>
+                <strong>What it is:</strong> Explainability is about understanding
+                <em> why</em> a model made a particular decision—which inputs (features)
+                mattered most and how they influenced the output.
+              </p>
+              <p>
+                <strong>Why it matters:</strong> It builds trust, helps spot bias, and
+                makes it easier to debug and improve models. Regulators and users
+                increasingly expect AI decisions to be interpretable.
+              </p>
+              <p>
+                <strong>Common methods:</strong>{" "}
+                <strong>Feature importance</strong> ranks which inputs drive predictions;{" "}
+                <strong>SHAP</strong> assigns each feature a contribution per prediction;{" "}
+                <strong>Saliency / attention</strong> highlights important regions in
+                images or sequences.
+              </p>
+            </div>
+
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
               Model Explainability
             </h2>
             <div className="flex flex-wrap gap-3 mb-6">
