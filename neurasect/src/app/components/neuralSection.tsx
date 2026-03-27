@@ -468,7 +468,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                             onClick={() =>
                               setHyperparameters((prev) => ({ ...prev, numNeurons: decrement(prev.numNeurons) }))
                             }
-                            className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibol text-gray-900"
+                            className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold text-gray-900"
                             disabled={trainingState.isTraining}
                           >
                             &minus;
