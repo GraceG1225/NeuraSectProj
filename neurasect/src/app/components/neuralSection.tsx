@@ -40,6 +40,7 @@ interface NeuralSectionProps {
 }
 
 export default function NeuralSection({ datasets }: NeuralSectionProps) {
+  const EXPLAINABILITY_CONFIG_KEY = "explainability:modelConfig";
   const [selectedDataset, setSelectedDataset] = useState<string>("iris");
   const [selectedModel, setSelectedModel] = useState<string>("neural_network");
   const [selectedDataPreprocessing, setSelectedDataPreprocessing] =
@@ -94,6 +95,33 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const selectedDatasetName =
+      datasets.find((dataset) => dataset.id === selectedDataset)?.title ||
+      localDatasets.find((dataset) => dataset.id === selectedDataset)?.id ||
+      selectedDataset;
+
+    const configSnapshot = {
+      dataset: selectedDataset,
+      datasetName: selectedDatasetName,
+      model: selectedModel,
+      regularizer: selectedRegularizer,
+      optimizer: selectedOptimizer,
+      activation: activationFunction,
+    };
+
+    localStorage.setItem(EXPLAINABILITY_CONFIG_KEY, JSON.stringify(configSnapshot));
+    window.dispatchEvent(new CustomEvent("explainability-config-updated"));
+  }, [
+    datasets,
+    localDatasets,
+    selectedDataset,
+    selectedModel,
+    selectedRegularizer,
+    selectedOptimizer,
+    activationFunction,
+  ]);
 
   async function handleUploadDataset(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
