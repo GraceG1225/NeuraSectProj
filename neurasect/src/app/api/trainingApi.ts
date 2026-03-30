@@ -12,6 +12,8 @@ export interface TrainingConfig {
   regularizer: string;
   optimizer: string;
   activation: string;
+  loss_function: string;
+  weight_init: string;
   epochs?: number;
   batch_size?: number;
 }
