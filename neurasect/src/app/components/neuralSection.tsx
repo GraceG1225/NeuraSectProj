@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { saveFile, getAllFiles, deleteFile } from "../lib/indexedDBHelpers";
 import { startTraining, connectTrainingWebSocket, uploadDataset, TrainingConfig, EpochUpdate } from "../api/trainingApi";
 import { AccuracyChart } from "./accuracyChart";
+import { InlineBanner, Banner } from "../components/InlineBanner";
 
 interface Dataset {
   id: string;
@@ -12,36 +13,6 @@ interface Dataset {
 
 interface NeuralSectionProps {
   datasets: Dataset[];
-}
-
-interface Banner {
-  type: "success" | "error" | "info" | "warning";
-  message: string;
-  section: "dataset" | "model" | "training" | "advanced" | "global";
-}
-
-function InlineBanner({ banner, onDismiss }: { banner: Banner | null; onDismiss: () => void }) {
-  if (!banner) return null;
-
-  const styles: Record<Banner["type"], string> = {
-    success: "bg-green-50 border-green-300 text-green-800",
-    error:   "bg-red-50 border-red-300 text-red-800",
-    info:    "bg-blue-50 border-blue-300 text-blue-800",
-    warning: "bg-yellow-50 border-yellow-300 text-yellow-800",
-  };
-  const icons: Record<Banner["type"], string> = {
-    success: "✓", error: "✕", info: "ℹ", warning: "⚠",
-  };
-
-  return (
-    <div className={`flex items-center justify-between px-4 py-3 rounded-lg border mt-4 text-sm font-medium ${styles[banner.type]}`}>
-      <div className="flex items-center gap-2">
-        <span className="font-bold">{icons[banner.type]}</span>
-        <span>{banner.message}</span>
-      </div>
-      <button onClick={onDismiss} className="opacity-60 hover:opacity-100 text-lg leading-none ml-4">×</button>
-    </div>
-  );
 }
 
 export default function NeuralSection({ datasets }: NeuralSectionProps) {
