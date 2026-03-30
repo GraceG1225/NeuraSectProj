@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { saveFile, getAllFiles, deleteFile } from "../lib/indexedDBHelpers";
 import { startTraining, connectTrainingWebSocket, uploadDataset, TrainingConfig, EpochUpdate } from "../api/trainingApi";
 import { AccuracyChart } from "./accuracyChart";
@@ -14,8 +14,45 @@ interface NeuralSectionProps {
   datasets: Dataset[];
 }
 
+interface Banner {
+  type: "success" | "error" | "info" | "warning";
+  message: string;
+  section: "dataset" | "model" | "training" | "advanced" | "global";
+}
+
+function InlineBanner({ banner, onDismiss }: { banner: Banner | null; onDismiss: () => void }) {
+  if (!banner) return null;
+
+  const styles: Record<Banner["type"], string> = {
+    success: "bg-green-50 border-green-300 text-green-800",
+    error:   "bg-red-50 border-red-300 text-red-800",
+    info:    "bg-blue-50 border-blue-300 text-blue-800",
+    warning: "bg-yellow-50 border-yellow-300 text-yellow-800",
+  };
+  const icons: Record<Banner["type"], string> = {
+    success: "✓", error: "✕", info: "ℹ", warning: "⚠",
+  };
+
+  return (
+    <div className={`flex items-center justify-between px-4 py-3 rounded-lg border mt-4 text-sm font-medium ${styles[banner.type]}`}>
+      <div className="flex items-center gap-2">
+        <span className="font-bold">{icons[banner.type]}</span>
+        <span>{banner.message}</span>
+      </div>
+      <button onClick={onDismiss} className="opacity-60 hover:opacity-100 text-lg leading-none ml-4">×</button>
+    </div>
+  );
+}
+
 export default function NeuralSection({ datasets }: NeuralSectionProps) {
   const [activeTab, setActiveTab] = useState<"config" | "training">("config");
+
+  const [banners, setBanners] = useState<Record<string, Banner | null>>({
+    dataset: null,
+    model: null,
+    training: null,
+    global: null,
+  });
 
   const [modelConfig, setModelConfig] = useState({
     selectedDataset: "iris",
@@ -24,6 +61,8 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     selectedRegularizer: "l2",
     selectedOptimizer: "adam",
     activationFunction: "relu",
+    lossFunction: "cross_entropy",
+    weightInit: "xavier",
   });
 
   const [hyperparameters, setHyperparameters] = useState({
@@ -33,6 +72,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     epochs: 100,
     numLayers: 2,
     numNeurons: 8,
+    batchSize: 32,
   });
 
   const [localFiles, setLocalFiles] = useState({
@@ -50,17 +90,18 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
   });
 
   const [uploadingDataset, setUploadingDataset] = useState(false);
-
   const wsRef = useRef<WebSocket | null>(null);
 
-  const formatNumber = (num: number) => {
-    if (num < 0.001) return num.toFixed(4);
-    if (num < 0.01) return num.toFixed(3);
-    return num.toFixed(2);
-  };
+  const setBanner = useCallback((section: string, type: Banner["type"], message: string, autoDismissMs = 5000) => {
+    setBanners((prev) => ({ ...prev, [section]: { type, message, section: section as Banner["section"] } }));
+    if (autoDismissMs > 0) {
+      setTimeout(() => setBanners((prev) => ({ ...prev, [section]: null })), autoDismissMs);
+    }
+  }, []);
 
-  const increment = (value: number) => value + 1;
-  const decrement = (value: number) => Math.max(1, value - 1);
+  const dismissBanner = useCallback((section: string) => {
+    setBanners((prev) => ({ ...prev, [section]: null }));
+  }, []);
 
   async function refreshLocalFiles() {
     const ds = await getAllFiles("datasets");
@@ -70,42 +111,36 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
 
   useEffect(() => {
     refreshLocalFiles();
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
+    return () => { if (wsRef.current) wsRef.current.close(); };
   }, []);
 
 
+  const formatNumber = (num: number) => {
+    if (num < 0.001) return num.toFixed(4);
+    if (num < 0.01)  return num.toFixed(3);
+    return num.toFixed(2);
+  };
+
+  const increment = (v: number) => v + 1;
+  const decrement = (v: number) => Math.max(1, v - 1);
 
   async function handleUploadDataset(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     if (!file.name.endsWith(".csv")) {
-      alert("Only .csv datasets allowed.");
+      setBanner("dataset", "error", "Only .csv datasets are allowed.");
       return;
     }
-
     setUploadingDataset(true);
     try {
       const response = await uploadDataset(file);
-
-      setModelConfig((prev) => {
-        const updated = { ...prev, selectedDataset: response.dataset_id };
-        return updated;
-      });
-
-      const cleanFileName = `${response.dataset_id}.csv`;
-      const cleanFile = new File([file], cleanFileName, { type: 'text/csv' });
+      setModelConfig((p) => ({ ...p, selectedDataset: response.dataset_id }));
+      const cleanFile = new File([file], `${response.dataset_id}.csv`, { type: "text/csv" });
       await saveFile("datasets", response.dataset_id, cleanFile);
       await refreshLocalFiles();
-      
-      alert(`Dataset uploaded successfully!\n\nRows: ${response.shape[0]}\nFeatures: ${response.shape[1]}\nClasses: ${response.num_classes}\n\nDataset ID: ${response.dataset_id}`);
+      setBanner("dataset", "success", `Uploaded! ${response.shape[0]} rows · ${response.shape[1]} features · ${response.num_classes} classes`);
     } catch (error: any) {
-      console.error('❌ Upload error:', error);
-      alert(`Failed to upload dataset: ${error.message}`);
+      setBanner("dataset", "error", `Upload failed: ${error.message}`);
     } finally {
       setUploadingDataset(false);
     }
@@ -115,40 +150,38 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith(".onnx")) {
-      alert("Only .onnx model files allowed.");
+      setBanner("model", "error", "Only .onnx model files are allowed.");
       return;
     }
     await saveFile("models", file.name, file);
     await refreshLocalFiles();
+    setBanner("model", "success", `Model "${file.name}" saved locally.`);
   }
 
   async function handleDeleteDataset(id: string) {
     await deleteFile("datasets", id);
     await refreshLocalFiles();
+    setBanner("dataset", "info", `Dataset "${id}" deleted.`);
   }
 
   async function handleDeleteModel(id: string) {
     await deleteFile("models", id);
     await refreshLocalFiles();
+    setBanner("model", "info", `Model "${id}" deleted.`);
   }
 
   async function handleStartTraining() {
     if (trainingState.isTraining) {
-      alert("Training is already in progress!");
+      setBanner("training", "warning", "Training is already in progress.");
       return;
     }
     if (!modelConfig.selectedDataset) {
-      alert("Please select or upload a dataset first!");
+      setBanner("dataset", "warning", "Please select or upload a dataset first.");
       return;
     }
 
     try {
-      setTrainingState((prev) => ({
-        ...prev,
-        isTraining: true,
-        trainingProgress: [],
-        currentEpoch: 0,
-      }));
+      setTrainingState((p) => ({ ...p, isTraining: true, trainingProgress: [], currentEpoch: 0 }));
 
       const config: TrainingConfig = {
 
@@ -163,74 +196,60 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
         regularizer: modelConfig.selectedRegularizer,
         optimizer: modelConfig.selectedOptimizer,
         activation: modelConfig.activationFunction,
+        loss_function: modelConfig.lossFunction,
+        weight_init: modelConfig.weightInit,
+        batch_size: hyperparameters.batchSize,
         epochs: hyperparameters.epochs,
 
-        batch_size: 32,
       };
 
       const response = await startTraining(config);
-      setTrainingState((prev) => ({
-        ...prev,
-        sessionId: response.session_id,
-        modelSummary: response.model_summary,
-      }));
-
+      setTrainingState((p) => ({ ...p, sessionId: response.session_id, modelSummary: response.model_summary }));
       setActiveTab("training");
+      setBanner("training", "info", "Training started!");
 
       wsRef.current = connectTrainingWebSocket(
         response.session_id,
         (update: EpochUpdate) => {
           if (update.type === "epoch_update" && update.epoch !== undefined) {
-            setTrainingState((prev) => ({
-              ...prev,
+            setTrainingState((p) => ({
+              ...p,
               currentEpoch: update.epoch as number,
-              trainingProgress: [...prev.trainingProgress, update],
+              trainingProgress: [...p.trainingProgress, update],
             }));
           } else if (update.type === "training_complete") {
-            setTrainingState((prev) => ({
-              ...prev,
-              isTraining: false,
-            }));
-            alert("Training completed successfully!");
+            setTrainingState((p) => ({ ...p, isTraining: false }));
+            setBanner("training", "success", "Training completed successfully!", 0);
           } else if (update.type === "error") {
-            setTrainingState((prev) => ({
-              ...prev,
-              isTraining: false,
-            }));
-            alert(`Training error: ${update.message}`);
+            setTrainingState((p) => ({ ...p, isTraining: false }));
+            setBanner("training", "error", `Training error: ${update.message}`, 0);
           }
         },
         (error) => {
           console.error("WebSocket error:", error);
-          setTrainingState((prev) => ({ ...prev, isTraining: false }));
+          setTrainingState((p) => ({ ...p, isTraining: false }));
+          setBanner("training", "error", "WebSocket connection lost.", 0);
         },
-        () => {
-          setTrainingState((prev) => ({ ...prev, isTraining: false }));
-        }
+        () => { setTrainingState((p) => ({ ...p, isTraining: false })); }
       );
     } catch (error: any) {
-      console.error("Training error:", error);
-      alert(`Failed to start training: ${error.message}`);
-      setTrainingState((prev) => ({ ...prev, isTraining: false }));
+      setBanner("training", "error", `Failed to start training: ${error.message}`, 0);
+      setTrainingState((p) => ({ ...p, isTraining: false }));
     }
   }
 
   function handleStopTraining() {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    setTrainingState((prev) => ({ ...prev, isTraining: false }));
+    if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
+    setTrainingState((p) => ({ ...p, isTraining: false }));
+    setBanner("training", "warning", "Training stopped.", 0);
   }
 
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Live Training Dashboard
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+        <div className="text-center mb-10">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">Live Training Dashboard</h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
             Configure your model parameters and watch real-time training progress
           </p>
         </div>
@@ -255,12 +274,12 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 className={`flex-1 px-6 py-4 font-semibold text-sm transition-colors relative ${
                   activeTab === "training"
                     ? "bg-blue-50 text-blue-700 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    : "text-gray-600 hover:text-gray:900 hover:bg-gray-50"
                 }`}
               >
                 Training Progress
                 {trainingState.isTraining && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                 )}
               </button>
             </div>
@@ -279,35 +298,22 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                     </h3>
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Select Dataset</label>
+                        <label className="label-input">Select Dataset</label>
                         <select
                           value={modelConfig.selectedDataset}
-                          onChange={(e) =>
-                            setModelConfig((prev) => ({ ...prev, selectedDataset: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          onChange={(e) => setModelConfig((p) => ({ ...p, selectedDataset: e.target.value }))}
+                          className="select-input"
                           disabled={trainingState.isTraining}
                         >
                           <option value="">Select Dataset</option>
-                          {datasets?.length > 0 &&
-                            datasets.map((dataset) => (
-                              <option key={dataset.id} value={dataset.id}>
-                                {dataset.title}
-                              </option>
-                            ))}
-                          {localFiles.datasets.length > 0 && (
-                            <option disabled>──────────</option>
-                          )}
-                          {localFiles.datasets.map((d) => (
-                            <option key={d.id} value={d.id}>
-                              (Uploaded) {d.id}
-                            </option>
-                          ))}
+                          {datasets?.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                          {localFiles.datasets.length > 0 && <option disabled>──────────</option>}
+                          {localFiles.datasets.map((d) => <option key={d.id} value={d.id}>(Uploaded) {d.id}</option>)}
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Dataset (.csv)</label>
+                        <label className="label-input">Upload Dataset (.csv)</label>
                         <input
                           type="file"
                           accept=".csv"
@@ -315,9 +321,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                           className="w-full text-sm text-gray-500"
                           disabled={trainingState.isTraining || uploadingDataset}
                         />
-                        {uploadingDataset && (
-                          <p className="text-xs text-blue-600 mt-1">Uploading...</p>
-                        )}
+                        {uploadingDataset && <p className="text-xs text-blue-600 mt-1 animate-pulse">Uploading...</p>}
                       </div>
                     </div>
 
@@ -341,13 +345,11 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
 
                     <div className="grid grid-cols-2 gap-6 mt-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Data Preprocessing</label>
+                        <label className="label-input">Data Preprocessing</label>
                         <select
                           value={modelConfig.selectedDataPreprocessing}
-                          onChange={(e) =>
-                            setModelConfig((prev) => ({ ...prev, selectedDataPreprocessing: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          onChange={(e) => setModelConfig((p) => ({ ...p, selectedDataPreprocessing: e.target.value }))}
+                          className="select-input"
                           disabled={trainingState.isTraining}
                         >
                           <option value="none">None</option>
@@ -358,26 +360,23 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Train/Test Split</label>
+                        <label className="label-input">Train/Test Split</label>
                         <div className="flex justify-between text-xs text-gray-600 mb-2">
                           <span>60%</span>
                           <span className="font-semibold text-gray-900">{Math.round(hyperparameters.trainTestSplit * 100)}%</span>
                           <span>90%</span>
                         </div>
                         <input
-                          type="range"
-                          min="0.6"
-                          max="0.9"
-                          step="0.01"
+                          type="range" min="0.6" max="0.9" step="0.01"
                           value={hyperparameters.trainTestSplit}
-                          onChange={(e) =>
-                            setHyperparameters((prev) => ({ ...prev, trainTestSplit: parseFloat(e.target.value) }))
-                          }
+                          onChange={(e) => setHyperparameters((p) => ({ ...p, trainTestSplit: parseFloat(e.target.value) }))}
                           className="w-full accent-blue-600"
                           disabled={trainingState.isTraining}
                         />
                       </div>
                     </div>
+
+                    <InlineBanner banner={banners.dataset} onDismiss={() => dismissBanner("dataset")} />
                   </div>
 
                   {/* model section */}
@@ -388,32 +387,24 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                     </h3>
                     <div className="grid grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Model Type</label>
+                        <label className="label-input">Model Type</label>
                         <select
                           value={modelConfig.selectedModel}
-                          onChange={(e) =>
-                            setModelConfig((prev) => ({ ...prev, selectedModel: e.target.value }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
+                          onChange={(e) => setModelConfig((p) => ({ ...p, selectedModel: e.target.value }))}
+                          className="select-input"
                           disabled={trainingState.isTraining}
                         >
                           <option value="neural_network">Neural Network</option>
                           <option value="cnn">CNN</option>
                           <option value="rnn">RNN</option>
                           <option value="transformer">Transformer</option>
-                          {localFiles.models.length > 0 && (
-                            <option disabled>──────────</option>
-                          )}
-                          {localFiles.models.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              (Local) {m.id}
-                            </option>
-                          ))}
+                          {localFiles.models.length > 0 && <option disabled>──────────</option>}
+                          {localFiles.models.map((m) => <option key={m.id} value={m.id}>(Local) {m.id}</option>)}
                         </select>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Model (.onnx)</label>
+                        <label className="label-input">Upload Model (.onnx)</label>
                         <input
                           type="file"
                           accept=".onnx"
@@ -443,67 +434,27 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
 
                     <div className="grid grid-cols-4 gap-4 mt-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Layers</label>
+                        <label className="label-input">Layers</label>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              setHyperparameters((prev) => ({ ...prev, numLayers: decrement(prev.numLayers) }))
-                            }
-                            className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold text-gray-900"
-                            disabled={trainingState.isTraining}
-                          >
-                            &minus;
-                          </button>
+                          <button onClick={() => setHyperparameters((p) => ({ ...p, numLayers: decrement(p.numLayers) }))} className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold text-gray-900" disabled={trainingState.isTraining}>&minus;</button>
                           <span className="flex-1 text-center font-semibold text-gray-700">{hyperparameters.numLayers}</span>
-                          <button
-                            onClick={() =>
-                              setHyperparameters((prev) => ({ ...prev, numLayers: increment(prev.numLayers) }))
-                            }
-                            className="flex-1 px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-semibold"
-                            disabled={trainingState.isTraining}
-                          >
-                            +
-                          </button>
+                          <button onClick={() => setHyperparameters((p) => ({ ...p, numLayers: increment(p.numLayers) }))} className="flex-1 px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-semibold" disabled={trainingState.isTraining}>+</button>
                         </div>
                       </div>
-
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Neurons</label>
+                        <label className="label-input">Neurons</label>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              setHyperparameters((prev) => ({ ...prev, numNeurons: decrement(prev.numNeurons) }))
-                            }
 
-                            className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibol text-gray-900"
+                          <button onClick={() => setHyperparameters((p) => ({ ...p, numNeurons: decrement(p.numNeurons) }))} className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold text-gray-900" disabled={trainingState.isTraining}>&minus;</button>
 
-                            disabled={trainingState.isTraining}
-                          >
-                            &minus;
-                          </button>
                           <span className="flex-1 text-center font-semibold text-gray-700">{hyperparameters.numNeurons}</span>
-                          <button
-                            onClick={() =>
-                              setHyperparameters((prev) => ({ ...prev, numNeurons: increment(prev.numNeurons) }))
-                            }
-                            className="flex-1 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold"
-                            disabled={trainingState.isTraining}
-                          >
-                            +
-                          </button>
+                          <button onClick={() => setHyperparameters((p) => ({ ...p, numNeurons: increment(p.numNeurons) }))} className="flex-1 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold" disabled={trainingState.isTraining}>+</button>
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Activation</label>
-                        <select
-                          value={modelConfig.activationFunction}
-                          onChange={(e) =>
-                            setModelConfig((prev) => ({ ...prev, activationFunction: e.target.value }))
-                          }
-                          className="w-full px-2 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                          disabled={trainingState.isTraining}
-                        >
+                        <label className="label-input">Activation</label>
+                        <select value={modelConfig.activationFunction} onChange={(e) => setModelConfig((p) => ({ ...p, activationFunction: e.target.value }))} className="w-full px-2 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" disabled={trainingState.isTraining}>
                           <option value="relu">ReLU</option>
                           <option value="sigmoid">Sigmoid</option>
                           <option value="tanh">Tanh</option>
@@ -514,15 +465,8 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Regularizer</label>
-                        <select
-                          value={modelConfig.selectedRegularizer}
-                          onChange={(e) =>
-                            setModelConfig((prev) => ({ ...prev, selectedRegularizer: e.target.value }))
-                          }
-                          className="w-full px-2 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                          disabled={trainingState.isTraining}
-                        >
+                        <label className="label-input">Regularizer</label>
+                        <select value={modelConfig.selectedRegularizer} onChange={(e) => setModelConfig((p) => ({ ...p, selectedRegularizer: e.target.value }))} className="w-full px-2 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" disabled={trainingState.isTraining}>
                           <option value="none">None</option>
                           <option value="l1">L1</option>
                           <option value="l2">L2</option>
@@ -531,6 +475,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                         </select>
                       </div>
                     </div>
+                    <InlineBanner banner={banners.model} onDismiss={() => dismissBanner("model")} />
                   </div>
 
                   {/* training parameters section */}
@@ -541,105 +486,85 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                     </h3>
                     <div className="grid grid-cols-3 gap-6">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Learning Rate</label>
+                        <label className="label-input">Learning Rate</label>
                         <div className="flex justify-between text-xs text-gray-600 mb-2">
                           <span>0.001</span>
                           <span className="font-semibold text-gray-900">{formatNumber(hyperparameters.learningRate)}</span>
                           <span>0.1</span>
                         </div>
-                        <input
-                          type="range"
-                          min="0.001"
-                          max="0.1"
-                          step="0.001"
-                          value={hyperparameters.learningRate}
-                          onChange={(e) =>
-                            setHyperparameters((prev) => ({ ...prev, learningRate: parseFloat(e.target.value) }))
-                          }
-                          className="w-full accent-blue-600"
-                          disabled={trainingState.isTraining}
-                        />
+                        <input type="range" min="0.001" max="0.1" step="0.001" value={hyperparameters.learningRate} onChange={(e) => setHyperparameters((p) => ({ ...p, learningRate: parseFloat(e.target.value) }))} className="w-full accent-blue-600" disabled={trainingState.isTraining} />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Regularization Rate</label>
+                        <label className="label-input">Regularization Rate</label>
                         <div className="flex justify-between text-xs text-gray-600 mb-2">
                           <span>0.0001</span>
                           <span className="font-semibold text-gray-900">{formatNumber(hyperparameters.regularizationRate)}</span>
                           <span>0.01</span>
                         </div>
-                        <input
-                          type="range"
-                          min="0.0001"
-                          max="0.01"
-                          step="0.0001"
-                          value={hyperparameters.regularizationRate}
-                          onChange={(e) =>
-                            setHyperparameters((prev) => ({ ...prev, regularizationRate: parseFloat(e.target.value) }))
-                          }
-                          className="w-full accent-blue-600"
-                          disabled={trainingState.isTraining}
-                        />
+                        <input type="range" min="0.0001" max="0.01" step="0.0001" value={hyperparameters.regularizationRate} onChange={(e) => setHyperparameters((p) => ({ ...p, regularizationRate: parseFloat(e.target.value) }))} className="w-full accent-blue-600" disabled={trainingState.isTraining} />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Epochs</label>
-                        <input
-                          type="number"
-                          value={hyperparameters.epochs}
-                          onChange={(e) =>
-                            setHyperparameters((prev) => ({ ...prev, epochs: parseInt(e.target.value) }))
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                          min="1"
-                          max="1000"
-                          disabled={trainingState.isTraining}
-                        />
+                        <label className="label-input">Epochs</label>
+                        <input type="number" value={hyperparameters.epochs} onChange={(e) => setHyperparameters((p) => ({ ...p, epochs: parseInt(e.target.value) }))} className="select-input" min="1" max="1000" disabled={trainingState.isTraining} />
                       </div>
                     </div>
 
-                    <div className="mt-6">
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Optimizer</label>
-                      <select
-                        value={modelConfig.selectedOptimizer}
-                        onChange={(e) =>
-                          setModelConfig((prev) => ({ ...prev, selectedOptimizer: e.target.value }))
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-                        disabled={trainingState.isTraining}
-                      >
-                        <option value="adam">Adam</option>
-                        <option value="sgd">SGD</option>
-                        <option value="rmsprop">RMSProp</option>
-                        <option value="adagrad">Adagrad</option>
-                        <option value="adamw">AdamW</option>
-                      </select>
+                    <div className="grid grid-cols-4 gap-4 mt-6">
+                      <div>
+                        <label className="label-input">Optimizer</label>
+                        <select value={modelConfig.selectedOptimizer} onChange={(e) => setModelConfig((p) => ({ ...p, selectedOptimizer: e.target.value }))} className="select-input" disabled={trainingState.isTraining}>
+                          <option value="adam">Adam</option>
+                          <option value="sgd">SGD</option>
+                          <option value="rmsprop">RMSProp</option>
+                          <option value="adagrad">Adagrad</option>
+                          <option value="adamw">AdamW</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label-input">Loss Function</label>
+                        <select value={modelConfig.lossFunction} onChange={(e) => setModelConfig((p) => ({ ...p, lossFunction: e.target.value }))} className="select-input" disabled={trainingState.isTraining}>
+                          <option value="cross_entropy">Cross Entropy</option>
+                          <option value="mse">MSE</option>
+                          <option value="binary_cross_entropy">Binary Cross Entropy</option>
+                          <option value="hinge">Hinge</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label-input">Weight Initialization</label>
+                        <select value={modelConfig.weightInit} onChange={(e) => setModelConfig((p) => ({ ...p, weightInit: e.target.value }))} className="select-input" disabled={trainingState.isTraining}>
+                          <option value="xavier">Xavier / Glorot</option>
+                          <option value="he">He</option>
+                          <option value="random_normal">Random Normal</option>
+                          <option value="random_uniform">Random Uniform</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label-input">Batch Size</label>
+                        <select value={hyperparameters.batchSize} onChange={(e) => setHyperparameters((p) => ({ ...p, batchSize: parseInt(e.target.value) }))} className="select-input" disabled={trainingState.isTraining}>
+                          <option value={8}>8</option>
+                          <option value={16}>16</option>
+                          <option value={32}>32</option>
+                          <option value={64}>64</option>
+                          <option value={128}>128</option>
+                          <option value={256}>256</option>
+                          <option value={512}>512</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
                   {/* start button */}
                   <div className="border-t pt-8 flex gap-4">
                     {!trainingState.isTraining ? (
-                      <button
-                        onClick={handleStartTraining}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors text-base"
-                      >
+                      <button onClick={handleStartTraining} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors text-base">
                         Start Training
                       </button>
                     ) : (
                       <>
-                        <button
-                          onClick={handleStopTraining}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors text-base"
-                        >
-                          Stop Training
-                        </button>
-                        <button
-                          onClick={() => setActiveTab("training")}
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors text-base"
-                        >
-                          View Progress →
-                        </button>
+                        <button onClick={handleStopTraining} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors text-base">Stop Training</button>
+                        <button onClick={() => setActiveTab("training")} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors text-base">View Progress →</button>
                       </>
                     )}
                   </div>
@@ -650,21 +575,15 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               {activeTab === "training" && (
                 <div className="space-y-6">
                   {/* graphs */}
+                  <InlineBanner banner={banners.training} onDismiss={() => dismissBanner("training")} />
                   <div className="h-96 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-gray-500 font-semibold mb-2">Graph</p>
-                      <p className="text-sm text-gray-400">Coming soon</p>
-                    </div>
+                    <p className="text-gray-500 font-semibold mb-2">Graph</p>
+                    <p className="text-sm text-gray-400">Coming soon</p>
                   </div>
-
                   {/* accuracy */}
                   <div className="h-96 bg-white">
-                    <AccuracyChart
-                      trainingProgress={trainingState.trainingProgress}
-                      isTraining={trainingState.isTraining}
-                    />
+                    <AccuracyChart trainingProgress={trainingState.trainingProgress} isTraining={trainingState.isTraining} />
                   </div>
-
                   {/* status */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
@@ -672,17 +591,11 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                       <p className="text-3xl font-bold text-blue-900 mt-1">{trainingState.currentEpoch}</p>
                       <p className="text-xs text-blue-600 mt-1">of {hyperparameters.epochs} epochs</p>
                     </div>
-
                     <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                       <p className="text-xs font-semibold text-green-700 uppercase">Status</p>
-                      <p className="text-3xl font-bold text-green-900 mt-1">
-                        {trainingState.isTraining ? "Running" : "Complete"}
-                      </p>
-                      <p className="text-xs text-green-600 mt-1">
-                        {trainingState.trainingProgress.length} epochs completed
-                      </p>
+                      <p className="text-3xl font-bold text-green-900 mt-1">{trainingState.isTraining ? "Running" : "Complete"}</p>
+                      <p className="text-xs text-green-600 mt-1">{trainingState.trainingProgress.length} epochs completed</p>
                     </div>
-
                     <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
                       <p className="text-xs font-semibold text-purple-700 uppercase">Latest Loss</p>
                       <p className="text-3xl font-bold text-purple-900 mt-1">
@@ -693,24 +606,17 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                       <p className="text-xs text-purple-600 mt-1">training loss</p>
                     </div>
                   </div>
-
                   {/* model summary */}
                   {trainingState.modelSummary && (
                     <div className="border-t pt-6">
                       <h3 className="font-semibold text-gray-900 mb-3">Model Architecture</h3>
-                      <pre className="text-xs text-gray-700 overflow-x-auto bg-gray-50 p-4 rounded max-h-48 border border-gray-200">
-                        {trainingState.modelSummary}
-                      </pre>
+                      <pre className="text-xs text-gray-700 overflow-x-auto bg-gray-50 p-4 rounded max-h-48 border border-gray-200">{trainingState.modelSummary}</pre>
                     </div>
                   )}
-
                   {/* back button */}
                   {!trainingState.isTraining && (
                     <div className="border-t pt-6">
-                      <button
-                        onClick={() => setActiveTab("config")}
-                        className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 py-3 rounded-lg font-semibold transition-colors"
-                      >
+                      <button onClick={() => setActiveTab("config")} className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 py-3 rounded-lg font-semibold transition-colors">
                         ← Back to Configuration
                       </button>
                     </div>
