@@ -10,4 +10,4 @@ supabase==2.28.0
 httpx==0.28.1
 python-dotenv==1.2.1
 tensorflow==2.20.0
-import-ipynb==0.2
+import-ipynb==0.1.4

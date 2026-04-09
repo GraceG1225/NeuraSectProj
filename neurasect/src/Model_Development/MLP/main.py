@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+import import_ipynb
 from pydantic import BaseModel
 import tensorflow as tf
 from tensorflow import keras
@@ -13,6 +14,8 @@ import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import import_ipynb
+import sys
+sys.path.append('../Model_Development/MLP')
 from MLPClass import MLP
 
 load_dotenv()

@@ -129,7 +129,10 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
         model_type: modelConfig.selectedModel,
         data_preprocessing: modelConfig.selectedDataPreprocessing,
         num_layers: hyperparameters.numLayers,
-        num_neurons: hyperparameters.numNeurons,
+        num_neurons: Array.from(
+  { length: hyperparameters.numLayers - 1 },
+  () => Number(hyperparameters.numNeurons)
+),
         learning_rate: hyperparameters.learningRate,
         regularization_rate: hyperparameters.regularizationRate,
         train_test_split: hyperparameters.trainTestSplit,
