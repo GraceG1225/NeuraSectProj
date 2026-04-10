@@ -12,15 +12,6 @@ from datetime import datetime
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-#import import_ipynb
-#import sys
-#import os
-
-#BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-#MLP_PATH = os.path.join(BASE_DIR, "..", "Model_Development", "MLP")
-
-#sys.path.append(MLP_PATH)
-#import import_ipynb
 from MLPClass import MLP
 
 
@@ -110,6 +101,7 @@ def get_regularizer(regularizer_name: str, rate: float):
 def build_model(
     input_shape: int,
     output_shape: int,
+    num_of_layers: int,
     num_of_neurons_per_layer: list,
     activation: str,
     regularizer: str,
