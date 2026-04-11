@@ -514,15 +514,16 @@ async def delete_session(session_id: str):
 async def gpu_websocket(websocket: WebSocket):
     await websocket.accept()
 
-    if not has_gpu():
-        await websocket.send_json({
-            "gpus": [],
-            "error": "No GPU detected"
-        })
-        await websocket.close()
-        return
-
     try:
+        if not has_gpu():
+            await websocket.send_json({
+                "gpus": [],
+                "error": "No GPU detected"
+            })
+
+            await websocket.receive()
+            return
+
         while True:
             stats = get_gpu_metrics()
             await websocket.send_json(stats)
