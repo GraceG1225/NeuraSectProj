@@ -5,6 +5,7 @@ import { saveFile, getAllFiles, deleteFile } from "../lib/indexedDBHelpers";
 import { startTraining, connectTrainingWebSocket, uploadDataset, TrainingConfig, EpochUpdate } from "../api/trainingApi";
 import { AccuracyChart } from "./accuracyChart";
 import { InlineBanner, Banner } from "../components/InlineBanner";
+import GpuMonitor from "../components/GpuMonitor";
 
 interface Dataset {
   id: string;
@@ -221,6 +222,8 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
           </p>
         </div>
 
+      <GpuMonitor />
+      
         <div className="w-full max-w-6xl mx-auto">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             {/* tab navigation */}
