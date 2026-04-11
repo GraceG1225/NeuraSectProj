@@ -3,6 +3,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export interface TrainingConfig {
   dataset_id: string;
   model_type: string;
+  data_preprocessing?: string;
   num_layers: number;
   num_neurons: number;
   learning_rate: number;
@@ -11,6 +12,8 @@ export interface TrainingConfig {
   regularizer: string;
   optimizer: string;
   activation: string;
+  loss_function: string;
+  weight_init: string;
   epochs?: number;
   batch_size?: number;
 }
@@ -37,6 +40,32 @@ export interface EpochUpdate {
   epochs?: number;
 }
 
+export interface UploadResponse {
+  dataset_id: string;
+  message: string;
+  shape: number[];
+  num_classes: number;
+}
+
+export async function uploadDataset(file: File): Promise<UploadResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/upload/dataset`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to upload dataset');
+  }
+
+  const data = await response.json();
+  console.log('Dataset uploaded successfully:', data);
+  return data;
+}
+
 export async function startTraining(config: TrainingConfig): Promise<TrainingResponse> {
   const response = await fetch(`${API_BASE_URL}/api/train/start`, {
     method: 'POST',
@@ -50,7 +79,6 @@ export async function startTraining(config: TrainingConfig): Promise<TrainingRes
     const error = await response.json();
     throw new Error(error.detail || 'Failed to start training');
   }
-
   return response.json();
 }
 
@@ -77,17 +105,15 @@ export function connectTrainingWebSocket(
     console.log('WebSocket connection closed');
     if (onClose) onClose();
   };
-
   return ws;
 }
 
 export async function getTrainingStatus(sessionId: string) {
   const response = await fetch(`${API_BASE_URL}/api/train/${sessionId}/status`);
-  
+
   if (!response.ok) {
     throw new Error('Failed to get training status');
   }
-  
   return response.json();
 }
 
@@ -104,7 +130,6 @@ export async function makePredictions(sessionId: string, data: number[][]) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to make predictions');
   }
-
   return response.json();
 }
 
@@ -116,7 +141,6 @@ export async function deleteSession(sessionId: string) {
   if (!response.ok) {
     throw new Error('Failed to delete session');
   }
-
   return response.json();
 }
 

@@ -36,35 +36,30 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--gray-100);
+  background: #f3f4f6;
   border-radius: 4px;
-  /* testing */
-
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gray-300);
+  background: #d1d5db;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-400);
+  background: #9ca3af;
 }
 
-/* Focus styles */
 *:focus {
-  outline: 2px solid var(--primary);
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-/* Button styles */
 .btn {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
 }
@@ -77,7 +72,6 @@ body {
   @apply border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500;
 }
 
-/* Card styles */
 .card {
   @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden;
 }
@@ -86,7 +80,6 @@ body {
   @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
 }
 
-/* Animation utilities */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -115,17 +108,39 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Gradient text */
 .gradient-text {
-  @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  @apply bg-clip-text text-transparent;
 }
 
-/* Loading spinner */
 .spinner {
   @apply animate-spin rounded-full border-2 border-gray-300 border-t-blue-600;
 }
 
-/* Responsive utilities */
 .container {
   @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+.select-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background-color: #ffffff;
+  color: #111827;
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.select-input:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: transparent;
+}
+
+.label-input {
+  display: block;
+  font-size: 0.875rem; 
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
 }

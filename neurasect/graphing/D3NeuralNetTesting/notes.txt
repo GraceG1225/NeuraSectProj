@@ -1,0 +1,17 @@
+REQUIREMENTS:
+  - 2 Terminals
+  - Web Browser
+
+Terminal 1:
+  - Navigate to root project folder <D3NeuralNetTesting>
+  - Activate virtual environment (Powershell) <.\.venv\Scripts\activate>
+  - Run python server <python -m http.server 8000>
+  - Open application on web browser <http://localhost:8000/public/index.html>
+
+Terminal 2:
+  - Navigate to root project folder <D3NeuralNetTesting>
+  - Activate virtual environment (Powershell) <.\.venv\Scripts\activate>
+  - 2 Options:
+    - Run modelGen, a predesigned python file that generates a new tensorflow model to be displayed.
+      - python modelGen.py
+    - Create your own model generator and use function defined in graphDataGen "vizualize(model: Model):"
