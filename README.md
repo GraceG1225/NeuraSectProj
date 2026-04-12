@@ -52,6 +52,10 @@ Click on API Keys to find the publishable and secret keys.
 ```
 docker compose up --build
 ```
+If you have a Nvidia GPU and would like to use it. Run this instead:
+```
+docker compose -f docker-compose-gpu.yml up --build
+```
 5. Open the application in your browser:
 ```
 http://localhost:3000
