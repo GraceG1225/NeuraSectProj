@@ -5,7 +5,7 @@ export interface TrainingConfig {
   model_type: string;
   data_preprocessing?: string;
   num_layers: number;
-  num_neurons: number;
+  num_neurons: number[];
   learning_rate: number;
   regularization_rate: number;
   train_test_split: number;
