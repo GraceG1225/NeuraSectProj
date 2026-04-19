@@ -108,7 +108,7 @@ pip install -r requirements.txt
 ```
 8. Start the backend development server:
 ```
-python main.py
+unicorn main:app --reload
 ```
 9. Start the frontend development server:
 ```

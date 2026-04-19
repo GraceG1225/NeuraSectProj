@@ -111,10 +111,18 @@ def build_model(
     num_of_neurons_per_layer: list,
     activation: str,
     regularizer: str,
-    regularization_rate: float
+    regularization_rate: float,
 ) -> keras.Model:
+    output_activation = 'linear' if output_shape == 1 else 'softmax'
 
-    model_instance  = MLP(input_shape=input_shape,output_shape=output_shape,num_of_layers=num_of_layers,num_of_neurons_per_layer=num_of_neurons_per_layer,activation=activation)
+    model_instance = MLP(
+        input_shape=input_shape,
+        output_shape=output_shape,
+        num_of_layers=num_of_layers,
+        num_of_neurons_per_layer=num_of_neurons_per_layer,
+        activation=activation,
+        output_activation=output_activation,
+    )
     model = model_instance.tf_build()
     return model
 
@@ -147,77 +155,149 @@ def load_dataset(dataset_id: str):
         return data.data, data.target, 1
 
     print("Dataset not found!")
-    raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found. Upload it first.")
+    raise HTTPException(
+        status_code=404,
+        detail=f"Dataset '{dataset_id}' not found. Upload it first.",
+    )
 
 def load_supabase_dataset(dataset_id: str):
     if not supabase_client:
         raise HTTPException(status_code=503, detail="Supabase not configured")
     try:
-        dataset_response = supabase_client.table("datasets").select("*").eq("id", dataset_id).execute()
-        if not dataset_response.data:
-            raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found in Supabase")
+        dataset_response = (
+            supabase_client.table("datasets")
+            .select("*")
+            .eq("id", dataset_id)
+            .execute()
+        )
+
+        if not dataset_response.data or len(dataset_response.data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Dataset '{dataset_id}' not found in Supabase",
+            )
+
         dataset_info = dataset_response.data[0]
         dataset_title = dataset_info.get("title", "").lower()
+
         table_names = ["iris", "boston", "youtube", "insurance", "carsales"]
-        table_name = next((t for t in table_names if t in dataset_title), None)
+
+        table_name = None
+        for tname in table_names:
+            if tname in dataset_title:
+                table_name = tname
+                break
+
         if not table_name:
             for tname in table_names:
                 try:
-                    response = supabase_client.table(tname).select("*").eq("dataset_id", dataset_id).execute()
-                    if response.data:
+                    response = (
+                        supabase_client.table(tname)
+                        .select("*")
+                        .eq("dataset_id", dataset_id)
+                        .execute()
+                    )
+                    if response.data and len(response.data) > 0:
                         table_name = tname
                         break
                 except Exception:
                     continue
+
         if not table_name:
-            raise HTTPException(status_code=404, detail=f"No data found for dataset '{dataset_id}'")
-        data_response = supabase_client.table(table_name).select("*").eq("dataset_id", dataset_id).execute()
-        if not data_response.data:
-            raise HTTPException(status_code=404, detail=f"No data rows found for dataset '{dataset_id}'")
+            raise HTTPException(
+                status_code=404,
+                detail=f"No data found for dataset '{dataset_id}'. Make sure the dataset has associated table data.",
+            )
+
+        data_response = (
+            supabase_client.table(table_name)
+            .select("*")
+            .eq("dataset_id", dataset_id)
+            .execute()
+        )
+
+        if not data_response.data or len(data_response.data) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No data rows found for dataset '{dataset_id}'",
+            )
+
         df = pd.DataFrame(data_response.data)
-        df = df.drop(columns=[c for c in ["id", "dataset_id", "created_at"] if c in df.columns], errors="ignore")
+
+        columns_to_drop = ["id", "dataset_id", "created_at"]
+        df = df.drop(
+            columns=[col for col in columns_to_drop if col in df.columns],
+            errors="ignore",
+        )
+
         if len(df.columns) < 2:
-            raise HTTPException(status_code=400, detail="Dataset must have at least 2 columns")
-        from sklearn.preprocessing import LabelEncoder
-        X_df = df.iloc[:, :-1].copy()
-        for col in X_df.columns:
-            if X_df[col].dtype in ("object", "string"):
-                le = LabelEncoder()
-                X_df[col] = le.fit_transform(X_df[col].astype(str))
-        X = X_df.values.astype(float)
+            raise HTTPException(
+                status_code=400,
+                detail="Dataset must have at least 2 columns (features + target)",
+            )
+
+        X_df = df.iloc[:, :-1]
         y = df.iloc[:, -1].values
+
+        from sklearn.preprocessing import LabelEncoder
+
+        X_encoded = X_df.copy()
+        for col in X_encoded.columns:
+            if X_encoded[col].dtype == "object" or X_encoded[col].dtype == "string":
+                le = LabelEncoder()
+                X_encoded[col] = le.fit_transform(X_encoded[col].astype(str))
+
+        X = X_encoded.values.astype(float)
+
         try:
             y = pd.to_numeric(y)
         except Exception:
             le = LabelEncoder()
             y = le.fit_transform(y.astype(str))
+
         unique_values = len(np.unique(y))
         num_classes = unique_values if unique_values < 20 else 1
-        print(f"Loaded '{dataset_title}' from Supabase — shape: {X.shape}, classes: {num_classes}")
+
+        print(f"Loaded dataset '{dataset_title}' from Supabase")
+        print(f"   Shape: {X.shape}, Classes: {num_classes}")
+
         return X, y, num_classes
+
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error loading dataset: {str(e)}")
+        print(f"Error loading Supabase dataset: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error loading dataset: {str(e)}"
+        )
 
-def prepare_data(X, y, train_test_split: float):
+def prepare_data(X, y, train_test_split: float, is_regression: bool = False):
     from sklearn.model_selection import train_test_split as sklearn_split
     from sklearn.preprocessing import StandardScaler
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    scaler_X = StandardScaler()
+    X_scaled = scaler_X.fit_transform(X)
+
+    scaler_y = None
+    y_scaled = np.array(y, dtype=float)
+
+    if is_regression:
+        scaler_y = StandardScaler()
+        y_scaled = scaler_y.fit_transform(y_scaled.reshape(-1, 1)).ravel()
 
     X_train, X_test, y_train, y_test = sklearn_split(
-        X_scaled, y,
-        test_size=1-train_test_split,
-        random_state=42
+        X_scaled, y_scaled, test_size=1 - train_test_split, random_state=42
     )
-    
-    return X_train, X_test, y_train, y_test, scaler
+
+    return X_train, X_test, y_train, y_test, scaler_X, scaler_y
 
 @app.get("/")
 async def root():
-    return {"message": "NeuraSect Backend API is running", "version": "1.0.0", "status": "healthy"}
+    return {
+        "message": "NeuraSect Backend API is running",
+        "version": "1.0.0",
+        "status": "healthy",
+    }
 
 @app.get("/api/health")
 async def health_check():
@@ -236,36 +316,35 @@ async def upload_dataset(file: UploadFile = File(...)):
 async def start_training(config: TrainingConfig):
     try:
         X, y, num_classes = load_dataset(config.dataset_id)
-        
-        X_train, X_test, y_train, y_test, scaler = prepare_data(X, y, config.train_test_split)
+
+        is_regression = num_classes == 1
+        X_train, X_test, y_train, y_test, scaler_X, scaler_y = prepare_data(
+            X, y, config.train_test_split, is_regression=is_regression
+        )
 
         if num_classes > 1:
             y_train = keras.utils.to_categorical(y_train, num_classes)
             y_test = keras.utils.to_categorical(y_test, num_classes)
-        
+
         model = build_model(
             input_shape=X_train.shape[1],
             output_shape=num_classes,
             num_of_layers=config.num_layers,
-            num_of_neurons_per_layer=config.num_neurons, # has to be a list; verify in config
+            num_of_neurons_per_layer=config.num_neurons,
             activation=config.activation,
             regularizer=config.regularizer,
-            regularization_rate=config.regularization_rate
+            regularization_rate=config.regularization_rate,
         )
-        
+
         optimizer = get_optimizer(config.optimizer, config.learning_rate)
-        
-        if num_classes == 1:
-            model.compile(
-                optimizer=optimizer,
-                loss='mse',
-                metrics=['mae']
-            )
+
+        if is_regression:
+            model.compile(optimizer=optimizer, loss="mse", metrics=["mae"])
         else:
             model.compile(
                 optimizer=optimizer,
-                loss='categorical_crossentropy',
-                metrics=['accuracy']
+                loss="categorical_crossentropy",
+                metrics=["accuracy"],
             )
 
         session_id = f"session_{len(training_sessions)}_{datetime.now().timestamp()}"
@@ -278,7 +357,10 @@ async def start_training(config: TrainingConfig):
             "config": config,
             "status": "initialized",
             "history": [],
-            "num_classes": num_classes
+            "num_classes": num_classes,
+            "scaler_X": scaler_X,
+            "scaler_y": scaler_y,
+            "is_regression": is_regression,
         }
 
         return TrainingResponse(
@@ -301,7 +383,11 @@ async def get_training_status(session_id: str):
     if session_id not in training_sessions:
         raise HTTPException(status_code=404, detail="Session not found")
     session = training_sessions[session_id]
-    return {"session_id": session_id, "status": session["status"], "history": session["history"]}
+    return {
+        "session_id": session_id,
+        "status": session["status"],
+        "history": session["history"],
+    }
 
 @app.post("/api/train/{session_id}/predict")
 async def predict(session_id: str, data: List[List[float]]):
@@ -311,7 +397,12 @@ async def predict(session_id: str, data: List[List[float]]):
     if session["status"] != "completed":
         raise HTTPException(status_code=400, detail="Model is not trained yet")
     try:
-        predictions = session["model"].predict(np.array(data))
+        input_array = session["scaler_X"].transform(np.array(data))
+        predictions = session["model"].predict(input_array)
+        if session.get("scaler_y") is not None:
+            predictions = session["scaler_y"].inverse_transform(
+                predictions.reshape(-1, 1)
+            )
         return {"predictions": predictions.tolist()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

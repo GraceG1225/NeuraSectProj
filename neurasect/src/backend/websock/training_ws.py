@@ -40,10 +40,18 @@ class TrainWebSocketHandler:
                     }
                     if "accuracy" in logs:
                         update["accuracy"] = float(logs.get("accuracy", 0))
-                        update["val_accuracy"] = float(logs.get("val_accuracy", 0)) if "val_accuracy" in logs else None
+                        update["val_accuracy"] = (
+                            float(logs.get("val_accuracy", 0))
+                            if "val_accuracy" in logs
+                            else None
+                        )
                     else:
                         update["mae"] = float(logs.get("mae", 0))
-                        update["val_mae"] = float(logs.get("val_mae", 0)) if "val_mae" in logs else None
+                        update["val_mae"] = (
+                            float(logs.get("val_mae", 0))
+                            if "val_mae" in logs
+                            else None
+                        )
                     loop.call_soon_threadsafe(epoch_queue.put_nowait, update)
 
             def run_training():
@@ -77,20 +85,37 @@ class TrainWebSocketHandler:
 
                 if update.get("type") == "TRAINING_COMPLETE":
                     history = update.get("history", {})
-                    await websocket.send_json({
-                        "type": "training_complete",
-                        "message": "Training completed successfully",
-                        "final_metrics": {
+                    is_regression = "mae" in history
+
+                    if is_regression:
+                        final_metrics = {
+                            "loss": float(history["loss"][-1]) if "loss" in history else None,
+                            "val_loss": float(history["val_loss"][-1]) if "val_loss" in history else None,
+                            "mae": float(history["mae"][-1]) if "mae" in history else None,
+                            "val_mae": float(history["val_mae"][-1]) if "val_mae" in history else None,
+                        }
+                    else:
+                        final_metrics = {
                             "loss": float(history["loss"][-1]) if "loss" in history else None,
                             "val_loss": float(history["val_loss"][-1]) if "val_loss" in history else None,
                             "accuracy": float(history["accuracy"][-1]) if "accuracy" in history else None,
                             "val_accuracy": float(history["val_accuracy"][-1]) if "val_accuracy" in history else None,
-                        },
+                        }
+
+                    await websocket.send_json({
+                        "type": "training_complete",
+                        "message": "Training completed successfully",
+                        "final_metrics": final_metrics,
                     })
                     break
+
                 elif update.get("type") == "TRAINING_ERROR":
-                    await websocket.send_json({"type": "error", "message": update.get("error")})
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": update.get("error"),
+                    })
                     break
+
                 else:
                     await websocket.send_json(update)
 
