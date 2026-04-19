@@ -38,6 +38,8 @@ export interface EpochUpdate {
   message?: string;
   final_metrics?: any;
   epochs?: number;
+  layers?: number[];
+  weights?: number[][][];
 }
 
 export interface UploadResponse {
@@ -137,7 +139,7 @@ export async function deleteSession(sessionId: string) {
   const response = await fetch(`${API_BASE_URL}/api/train/${sessionId}`, {
     method: 'DELETE',
   });
-
+  
   if (!response.ok) {
     throw new Error('Failed to delete session');
   }

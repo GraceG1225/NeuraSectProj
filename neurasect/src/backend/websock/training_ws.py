@@ -52,6 +52,19 @@ class TrainWebSocketHandler:
                             if "val_mae" in logs
                             else None
                         )
+
+                    if (epoch + 1) % 5 == 0:
+                        layers = []
+                        weights = []
+                        for layer in self.model.layers:
+                            if hasattr(layer, "units"):
+                                layers.append(layer.units)
+                        for i in range(len(layers) - 1):
+                            kernel = self.model.layers[i + 1].get_weights()[0]
+                            weights.append(kernel.tolist())
+                        update["layers"] = layers
+                        update["weights"] = weights
+
                     loop.call_soon_threadsafe(epoch_queue.put_nowait, update)
 
             def run_training():

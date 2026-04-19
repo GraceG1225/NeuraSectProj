@@ -6,6 +6,7 @@ import { startTraining, connectTrainingWebSocket, uploadDataset, TrainingConfig,
 import { AccuracyChart } from "./accuracyChart";
 import { InlineBanner, Banner } from "../components/InlineBanner";
 import GpuMonitor from "../components/GpuMonitor";
+import NeuralNetworkGraph from "./NeuralNetworkGraph";
 
 interface Dataset {
   id: string;
@@ -211,6 +212,10 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     setTrainingState((p) => ({ ...p, isTraining: false }));
     setBanner("training", "warning", "Training stopped.", 0);
   }
+  
+  const latestEpochWithWeights = [...trainingState.trainingProgress]
+    .reverse()
+    .find((e) => e.layers && e.weights);
 
   return (
     <section className="py-20 bg-gray-50">
@@ -542,10 +547,13 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 <div className="space-y-6">
                   {/* graphs */}
                   <InlineBanner banner={banners.training} onDismiss={() => dismissBanner("training")} />
-                  <div className="h-96 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center">
-                    <p className="text-gray-500 font-semibold mb-2">Graph</p>
-                    <p className="text-sm text-gray-400">Coming soon</p>
-                  </div>
+                  <NeuralNetworkGraph
+                    numLayers={hyperparameters.numLayers}
+                    numNeurons={hyperparameters.numNeurons}
+                    trainingProgress={trainingState.trainingProgress}
+                    Layers={latestEpochWithWeights?.layers}
+                    Weights={latestEpochWithWeights?.weights}
+                  />
                   {/* accuracy */}
                   <div className="h-96 bg-white">
                     <AccuracyChart trainingProgress={trainingState.trainingProgress} isTraining={trainingState.isTraining} />
