@@ -139,6 +139,18 @@ export type ExplainabilityWsMessage =
     }
   | { type: 'error'; message: string };
 
+export type ExplainabilityImageWsMessage =
+  | { type: 'explain_started'; m_steps: number }
+  | {
+      type: 'explain_complete';
+      overlay_png_base64: string;
+      raw_heatmap_png_base64: string;
+      target_class: number;
+      prediction_top1: number;
+      m_steps: number;
+    }
+  | { type: 'error'; message: string };
+
 export function connectExplainabilityWebSocket(
   sessionId: string,
   onMessage: (data: ExplainabilityWsMessage) => void,
@@ -168,6 +180,40 @@ export function connectExplainabilityWebSocket(
   ws.onclose = (ev) => {
     if (ev.code !== 1000) {
       console.warn('Explainability WebSocket closed', 'code:', ev.code, 'reason:', ev.reason || '(none)');
+    }
+    if (onClose) onClose();
+  };
+
+  return ws;
+}
+
+export function connectExplainabilityImageWebSocket(
+  onMessage: (data: ExplainabilityImageWsMessage) => void,
+  onError?: (error: Event) => void,
+  onClose?: () => void
+): WebSocket {
+  const wsBase = apiBaseToWebSocketBase(API_BASE_URL);
+  const url = `${wsBase}/ws/explain/image`;
+  const ws = new WebSocket(url);
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data) as ExplainabilityImageWsMessage;
+    onMessage(data);
+  };
+
+  ws.onerror = () => {
+    console.error(
+      'Explainability IMAGE WebSocket error (browser hides details). URL:',
+      url,
+      'readyState:',
+      ws.readyState
+    );
+    if (onError) onError(new Event('websocket-error'));
+  };
+
+  ws.onclose = (ev) => {
+    if (ev.code !== 1000) {
+      console.warn('Explainability IMAGE WebSocket closed', 'code:', ev.code, 'reason:', ev.reason || '(none)');
     }
     if (onClose) onClose();
   };

@@ -16,6 +16,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      # This value is used by the browser. Use a host-reachable URL, not the Docker service name.
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend

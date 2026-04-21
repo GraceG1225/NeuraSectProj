@@ -16,6 +16,13 @@ import threading
 import io
 
 from explainability_ig import integrated_gradients_tabular
+from explainability_ig_image import (
+    decode_image_base64_to_tensor,
+    integrated_gradients_image,
+    build_overlay_png_base64,
+    build_heatmap_png_base64,
+    default_imagenet_model_and_preprocess,
+)
 
 load_dotenv()
 
@@ -82,6 +89,10 @@ class EpochUpdate(BaseModel):
 
 training_sessions: Dict[str, Dict[str, Any]] = {}
 active_connections: Dict[str, WebSocket] = {}
+
+# Lazy-loaded demo image model for explainability.
+_imagenet_model: Optional[keras.Model] = None
+_imagenet_preprocess = None
 
 def get_optimizer(optimizer_name: str, learning_rate: float):
     optimizers_map = {
@@ -447,6 +458,118 @@ async def training_websocket(websocket: WebSocket, session_id: str):
         try:
             await websocket.close()
         except:
+            pass
+
+
+@app.websocket("/ws/explain/image")
+async def explainability_image_websocket(websocket: WebSocket):
+    """
+    Demo: image integrated gradients using a pretrained ImageNet CNN.
+
+    Client connects, then sends one JSON text message:
+      {
+        "image_base64": "data:image/jpeg;base64,...",
+        "m_steps": 32,
+        "target_class": 243,   // optional; otherwise argmax
+        "alpha": 0.45          // optional overlay strength
+      }
+
+    Response:
+      - explain_started
+      - explain_complete { overlay_png_base64, raw_heatmap_png_base64, prediction_top1, target_class, m_steps }
+    """
+    await websocket.accept()
+
+    try:
+        raw = await websocket.receive_text()
+        payload = json.loads(raw)
+    except Exception as e:
+        await websocket.send_json({"type": "error", "message": f"Invalid JSON payload: {e}"})
+        await websocket.close()
+        return
+
+    image_b64 = payload.get("image_base64")
+    if not isinstance(image_b64, str) or not image_b64.strip():
+        await websocket.send_json({"type": "error", "message": "Provide image_base64 (data URL or raw base64)."})
+        await websocket.close()
+        return
+
+    m_steps = int(payload.get("m_steps", 32))
+    m_steps = max(8, min(m_steps, 128))
+    alpha = float(payload.get("alpha", 0.45))
+    alpha = max(0.0, min(alpha, 0.85))
+
+    await websocket.send_json({"type": "explain_started", "m_steps": m_steps})
+
+    result_queue: asyncio.Queue = asyncio.Queue()
+    loop = asyncio.get_event_loop()
+
+    def run_explain():
+        try:
+            global _imagenet_model, _imagenet_preprocess
+            if _imagenet_model is None or _imagenet_preprocess is None:
+                _imagenet_model, _imagenet_preprocess = default_imagenet_model_and_preprocess(224)
+
+            img_rgb_01 = decode_image_base64_to_tensor(image_b64)  # (H,W,3) in [0,1]
+            original_disp = tf.image.resize(img_rgb_01, [224, 224], method="bilinear")
+            batch = _imagenet_preprocess(img_rgb_01)  # (1,224,224,3) preprocessed
+
+            logits = _imagenet_model(batch, training=False).numpy()[0]
+            target_class = payload.get("target_class")
+            if target_class is None:
+                target_idx = int(np.argmax(logits))
+            else:
+                target_idx = int(target_class)
+                if target_idx < 0 or target_idx >= logits.shape[0]:
+                    raise ValueError(f"target_class out of range (0..{logits.shape[0]-1})")
+
+            attrs = integrated_gradients_image(_imagenet_model, batch, target_idx, m_steps=m_steps)
+            overlay_b64 = build_overlay_png_base64(original_disp, attrs, alpha=alpha)
+            heatmap_b64 = build_heatmap_png_base64(attrs)
+
+            loop.call_soon_threadsafe(
+                result_queue.put_nowait,
+                {
+                    "type": "EXPLAIN_COMPLETE",
+                    "overlay_png_base64": overlay_b64,
+                    "raw_heatmap_png_base64": heatmap_b64,
+                    "target_class": target_idx,
+                    "prediction_top1": int(np.argmax(logits)),
+                    "m_steps": m_steps,
+                },
+            )
+        except Exception as e:
+            loop.call_soon_threadsafe(result_queue.put_nowait, {"type": "EXPLAIN_ERROR", "error": str(e)})
+
+    threading.Thread(target=run_explain, daemon=True).start()
+
+    try:
+        update = await result_queue.get()
+        if update.get("type") == "EXPLAIN_ERROR":
+            await websocket.send_json({"type": "error", "message": update.get("error", "Unknown error")})
+        else:
+            await websocket.send_json(
+                {
+                    "type": "explain_complete",
+                    "overlay_png_base64": update.get("overlay_png_base64"),
+                    "raw_heatmap_png_base64": update.get("raw_heatmap_png_base64"),
+                    "target_class": update.get("target_class"),
+                    "prediction_top1": update.get("prediction_top1"),
+                    "m_steps": update.get("m_steps"),
+                }
+            )
+    except WebSocketDisconnect:
+        print("Explain image WebSocket disconnected")
+    except Exception as e:
+        print(f"Explain image WebSocket error: {e}")
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
             pass
 
 
