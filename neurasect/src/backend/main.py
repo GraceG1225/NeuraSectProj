@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 import threading
 import io
 
+from explainability_ig import integrated_gradients_tabular
+
 load_dotenv()
 
 app = FastAPI(title="NeuraSect Backend API")
@@ -328,6 +330,7 @@ async def start_training(config: TrainingConfig):
             "status": "initialized",
             "history": [],
             "num_classes": num_classes,
+            "scaler": scaler,
         }
         return TrainingResponse(
             session_id=session_id,
@@ -445,6 +448,140 @@ async def training_websocket(websocket: WebSocket, session_id: str):
             await websocket.close()
         except:
             pass
+
+
+@app.websocket("/ws/explain/{session_id}")
+async def explainability_websocket(websocket: WebSocket, session_id: str):
+    """
+    Client connects, then sends one JSON text message:
+    {"feature_row": [float, ...], "m_steps": 50}
+    Values must be raw features (same scale as the CSV / sklearn dataset), not scaled.
+    """
+    await websocket.accept()
+
+    if session_id not in training_sessions:
+        await websocket.send_json({"type": "error", "message": "Invalid session ID"})
+        await websocket.close()
+        return
+
+    session = training_sessions[session_id]
+    if session.get("status") != "completed":
+        await websocket.send_json(
+            {"type": "error", "message": "Finish training this session before running explainability."}
+        )
+        await websocket.close()
+        return
+
+    scaler = session.get("scaler")
+    if scaler is None:
+        await websocket.send_json({"type": "error", "message": "Session has no scaler; start a new training run."})
+        await websocket.close()
+        return
+
+    try:
+        raw = await websocket.receive_text()
+        payload = json.loads(raw)
+    except Exception as e:
+        await websocket.send_json({"type": "error", "message": f"Invalid JSON payload: {e}"})
+        await websocket.close()
+        return
+
+    feature_row = payload.get("feature_row")
+    if feature_row is None and payload.get("features") is not None:
+        feature_row = payload.get("features")
+    if not isinstance(feature_row, list) or len(feature_row) == 0:
+        await websocket.send_json({"type": "error", "message": "Provide feature_row as a non-empty array of numbers."})
+        await websocket.close()
+        return
+
+    m_steps = int(payload.get("m_steps", 50))
+    m_steps = max(5, min(m_steps, 200))
+
+    await websocket.send_json({"type": "explain_started", "m_steps": m_steps})
+
+    result_queue: asyncio.Queue = asyncio.Queue()
+    loop = asyncio.get_event_loop()
+
+    def run_explain():
+        try:
+            x_raw = np.array(feature_row, dtype=np.float32).reshape(1, -1)
+            n_features = session["model"].input_shape[-1]
+            if x_raw.shape[1] != n_features:
+                loop.call_soon_threadsafe(
+                    result_queue.put_nowait,
+                    {
+                        "type": "EXPLAIN_ERROR",
+                        "error": f"Expected {n_features} features, got {x_raw.shape[1]}",
+                    },
+                )
+                return
+
+            x_scaled = scaler.transform(x_raw).astype(np.float32)
+            model = session["model"]
+            num_classes = session["num_classes"]
+            pred = model.predict(x_scaled, verbose=0)
+            regression = num_classes == 1
+
+            if regression:
+                target_idx = 0
+                pred_summary = float(pred.reshape(-1)[0])
+            else:
+                target_idx = int(np.argmax(pred[0]))
+                pred_summary = pred[0].tolist()
+
+            x_batch = tf.constant(x_scaled)
+            attrs = integrated_gradients_tabular(
+                model, x_batch, target_idx, m_steps=m_steps, regression=regression
+            )
+
+            loop.call_soon_threadsafe(
+                result_queue.put_nowait,
+                {
+                    "type": "EXPLAIN_COMPLETE",
+                    "regression": regression,
+                    "target_class": target_idx if not regression else None,
+                    "prediction": pred_summary,
+                    "attributions": attrs.tolist(),
+                    "m_steps": m_steps,
+                },
+            )
+        except Exception as e:
+            loop.call_soon_threadsafe(
+                result_queue.put_nowait,
+                {"type": "EXPLAIN_ERROR", "error": str(e)},
+            )
+
+    threading.Thread(target=run_explain, daemon=True).start()
+
+    try:
+        update = await result_queue.get()
+        if update.get("type") == "EXPLAIN_ERROR":
+            await websocket.send_json({"type": "error", "message": update.get("error", "Unknown error")})
+        else:
+            await websocket.send_json(
+                {
+                    "type": "explain_complete",
+                    "regression": update.get("regression"),
+                    "target_class": update.get("target_class"),
+                    "prediction": update.get("prediction"),
+                    "attributions": update.get("attributions"),
+                    "m_steps": update.get("m_steps"),
+                }
+            )
+    except WebSocketDisconnect:
+        print(f"Explain WebSocket disconnected for session {session_id}")
+    except Exception as e:
+        print(f"Explain WebSocket error: {e}")
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except Exception:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
 
 @app.get("/api/train/{session_id}/status")
 async def get_training_status(session_id: str):

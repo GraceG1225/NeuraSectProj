@@ -175,12 +175,13 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       };
 
       const response = await startTraining(config);
-      setTrainingState((p) => ({ ...p, sessionId: response.session_id, modelSummary: response.model_summary }));
+      const sessionId = response.session_id;
+      setTrainingState((p) => ({ ...p, sessionId, modelSummary: response.model_summary }));
       setActiveTab("training");
       setBanner("training", "info", "Training started!");
 
       wsRef.current = connectTrainingWebSocket(
-        response.session_id,
+        sessionId,
         (update: EpochUpdate) => {
           if (update.type === "epoch_update" && update.epoch !== undefined) {
             setTrainingState((p) => ({
@@ -189,6 +190,11 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               trainingProgress: [...p.trainingProgress, update],
             }));
           } else if (update.type === "training_complete") {
+            try {
+              localStorage.setItem("neurasect:lastTrainingSessionId", sessionId);
+            } catch {
+              /* ignore quota / private mode */
+            }
             setTrainingState((p) => ({ ...p, isTraining: false }));
             setBanner("training", "success", "Training completed successfully!", 0);
           } else if (update.type === "error") {
