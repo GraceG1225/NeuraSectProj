@@ -51,7 +51,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     models: [] as any[],
   });
 
-
   const [trainingState, setTrainingState] = useState({
     isTraining: false,
     sessionId: null as string | null,
@@ -84,7 +83,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     refreshLocalFiles();
     return () => { if (wsRef.current) wsRef.current.close(); };
   }, []);
-
 
   const formatNumber = (num: number) => {
     if (num < 0.001) return num.toFixed(4);
@@ -155,7 +153,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
       setTrainingState((p) => ({ ...p, isTraining: true, trainingProgress: [], currentEpoch: 0 }));
 
       const config: TrainingConfig = {
-
         dataset_id: modelConfig.selectedDataset,
         model_type: modelConfig.selectedModel,
         data_preprocessing: modelConfig.selectedDataPreprocessing,
@@ -171,12 +168,10 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
         weight_init: modelConfig.weightInit,
         batch_size: hyperparameters.batchSize,
         epochs: hyperparameters.epochs,
-
       };
 
       const response = await startTraining(config);
-      const sessionId = response.session_id;
-      setTrainingState((p) => ({ ...p, sessionId, modelSummary: response.model_summary }));
+      setTrainingState((p) => ({ ...p, sessionId: response.session_id, modelSummary: response.model_summary }));
       setActiveTab("training");
       setBanner("training", "info", "Training started!");
 
@@ -190,11 +185,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               trainingProgress: [...p.trainingProgress, update],
             }));
           } else if (update.type === "training_complete") {
-            try {
-              localStorage.setItem("neurasect:lastTrainingSessionId", sessionId);
-            } catch {
-              /* ignore quota / private mode */
-            }
             setTrainingState((p) => ({ ...p, isTraining: false }));
             setBanner("training", "success", "Training completed successfully!", 0);
           } else if (update.type === "error") {
@@ -231,7 +221,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
           </p>
         </div>
 
-
         <div className="w-full max-w-6xl mx-auto">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             {/* tab navigation */}
@@ -260,7 +249,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 )}
               </button>
             </div>
-
 
             {/* tabs */}
             <div className="p-8">
@@ -421,9 +409,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                       <div>
                         <label className="label-input">Neurons</label>
                         <div className="flex items-center gap-2">
-
                           <button onClick={() => setHyperparameters((p) => ({ ...p, numNeurons: decrement(p.numNeurons) }))} className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold text-gray-900" disabled={trainingState.isTraining}>&minus;</button>
-
                           <span className="flex-1 text-center font-semibold text-gray-700">{hyperparameters.numNeurons}</span>
                           <button onClick={() => setHyperparameters((p) => ({ ...p, numNeurons: increment(p.numNeurons) }))} className="flex-1 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold" disabled={trainingState.isTraining}>+</button>
                         </div>

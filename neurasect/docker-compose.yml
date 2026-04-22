@@ -5,6 +5,7 @@ services:
     container_name: fastapi-backend
     ports:
       - "8000:8000"
+    gpus: all
     environment:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY}
@@ -16,7 +17,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # This value is used by the browser. Use a host-reachable URL, not the Docker service name.
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     depends_on:
       - backend

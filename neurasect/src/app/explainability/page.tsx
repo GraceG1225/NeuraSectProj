@@ -2,12 +2,7 @@
 
 import { useState, useEffect, Dispatch, SetStateAction, useRef } from "react";
 import Link from "next/link";
-import {
-  connectExplainabilityWebSocket,
-  connectExplainabilityImageWebSocket,
-  type ExplainabilityWsMessage,
-  type ExplainabilityImageWsMessage,
-} from "../api/trainingApi";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useTheme } from "../components/theme/themeContext";
 
 const EXPLAINABILITY_CONFIG_KEY = "explainability:modelConfig";
@@ -52,173 +47,27 @@ export default function ExplainabilityPage() {
     null,
     null,
   ]);
-  const [inputImageFiles, setInputImageFiles] = useState<(File | null)[]>([
-    null,
-    null,
-    null,
-    null,
-  ]);
   const [modifiedImages, setModifiedImages] = useState<(string | null)[]>([
     null,
     null,
     null,
     null,
   ]);
-  const [showOverlay, setShowOverlay] = useState<boolean[]>([
-    false,
-    false,
-    false,
-    false,
-  ]);
-  const [imageExplainStatus, setImageExplainStatus] = useState<(string | null)[]>([
-    null,
-    null,
-    null,
-    null,
-  ]);
-  const [imageExplainResult, setImageExplainResult] = useState<
-    (ExplainabilityImageWsMessage | null)[]
-  >([null, null, null, null]);
   const [modelConfig, setModelConfig] = useState<ModelConfig>(DEFAULT_MODEL_CONFIG);
-  const [featureRowInput, setFeatureRowInput] = useState("5.1,3.5,1.4,0.2");
-  const [explainStatus, setExplainStatus] = useState<string | null>(null);
-  const [explainResult, setExplainResult] = useState<ExplainabilityWsMessage | null>(
-    null
-  );
-  const explainWsRef = useRef<WebSocket | null>(null);
 
-  const fileToDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Failed to read image file."));
-      reader.readAsDataURL(file);
-    });
-
-  const setInputImageAtIndex = (index: number, file: File | null) => {
-    setInputImageFiles((prev) => {
+  const updateImageAtIndex = (
+    setter: Dispatch<SetStateAction<(string | null)[]>>,
+    index: number,
+    file: File | null
+  ) => {
+    setter((prev) => {
       const next = [...prev];
-      next[index] = file;
-      return next;
-    });
-    setInputImages((prev) => {
-      const next = [...prev];
-      if (next[index]) URL.revokeObjectURL(next[index]!);
+      if (next[index]) {
+        URL.revokeObjectURL(next[index]!);
+      }
       next[index] = file ? URL.createObjectURL(file) : null;
       return next;
     });
-  };
-
-  const runImageIntegratedGradientsAtIndex = async (panelIndex: number) => {
-    const file = inputImageFiles[panelIndex];
-    if (!file) {
-      setImageExplainStatus((prev) => {
-        const next = [...prev];
-        next[panelIndex] = "Upload an input image first.";
-        return next;
-      });
-      setImageExplainResult((prev) => {
-        const next = [...prev];
-        next[panelIndex] = null;
-        return next;
-      });
-      return;
-    }
-
-    setImageExplainStatus((prev) => {
-      const next = [...prev];
-      next[panelIndex] = "Connecting…";
-      return next;
-    });
-    setImageExplainResult((prev) => {
-      const next = [...prev];
-      next[panelIndex] = null;
-      return next;
-    });
-
-    let ws: WebSocket | null = null;
-    try {
-      const imageBase64 = await fileToDataUrl(file);
-
-      ws = connectExplainabilityImageWebSocket(
-        (msg: ExplainabilityImageWsMessage) => {
-          if (msg.type === "explain_started") {
-            setImageExplainStatus((prev) => {
-              const next = [...prev];
-              next[panelIndex] = `Running integrated gradients (${msg.m_steps} steps)…`;
-              return next;
-            });
-          } else if (msg.type === "explain_complete") {
-            setImageExplainResult((prev) => {
-              const next = [...prev];
-              next[panelIndex] = msg;
-              return next;
-            });
-            setShowOverlay((prev) => {
-              const next = [...prev];
-              next[panelIndex] = false; // default to raw heatmap
-              return next;
-            });
-            setImageExplainStatus((prev) => {
-              const next = [...prev];
-              next[panelIndex] = "Done.";
-              return next;
-            });
-            // Show the returned raw heatmap in the "Modified" slot for this panel.
-            setModifiedImages((prev) => {
-              const next = [...prev];
-              if (next[panelIndex]) URL.revokeObjectURL(next[panelIndex]!);
-              next[panelIndex] = `data:image/png;base64,${msg.raw_heatmap_png_base64}`;
-              return next;
-            });
-            ws?.close();
-          } else if (msg.type === "error") {
-            setImageExplainStatus((prev) => {
-              const next = [...prev];
-              next[panelIndex] = msg.message;
-              return next;
-            });
-            setImageExplainResult((prev) => {
-              const next = [...prev];
-              next[panelIndex] = null;
-              return next;
-            });
-            ws?.close();
-          }
-        },
-        () => {
-          setImageExplainStatus((prev) => {
-            const next = [...prev];
-            next[panelIndex] = "WebSocket error.";
-            return next;
-          });
-        },
-        () => {
-          /* ignore */
-        }
-      );
-
-      ws.onopen = () => {
-        ws?.send(
-          JSON.stringify({
-            image_base64: imageBase64,
-            m_steps: 32,
-            alpha: 0.45,
-          })
-        );
-      };
-    } catch (e) {
-      setImageExplainStatus((prev) => {
-        const next = [...prev];
-        next[panelIndex] = e instanceof Error ? e.message : "Failed to run image explainability.";
-        return next;
-      });
-      try {
-        ws?.close();
-      } catch {
-        /* ignore */
-      }
-    }
   };
 
   useEffect(() => {
@@ -252,24 +101,6 @@ export default function ExplainabilityPage() {
   }, []);
 
   useEffect(() => {
-    try {
-      const last = localStorage.getItem("neurasect:lastTrainingSessionId");
-      if (last) {
-        setSelectedId((prev) => (prev.trim() ? prev : last));
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      explainWsRef.current?.close();
-      explainWsRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
     return () => {
       inputImages.forEach((imageUrl) => {
         if (imageUrl) URL.revokeObjectURL(imageUrl);
@@ -279,7 +110,6 @@ export default function ExplainabilityPage() {
       });
     };
   }, [inputImages, modifiedImages]);
-
 
   return (
     <div
@@ -439,46 +269,6 @@ export default function ExplainabilityPage() {
                 <strong>Saliency / attention</strong> highlights important regions in
                 images or sequences.
               </p>
-            </div>
-
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Model Explainability
-            </h2>
-
-            <div className="flex flex-wrap gap-3 mb-6">
-              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
-                Dataset Selected: {modelConfig.datasetName || toLabel(modelConfig.dataset)}
-              </span>
-              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
-                Model: {toLabel(modelConfig.model)}
-              </span>
-              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
-                Regularizer: {toLabel(modelConfig.regularizer)}
-              </span>
-              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
-                Optimizer: {toLabel(modelConfig.optimizer)}
-              </span>
-              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
-                Activation: {toLabel(modelConfig.activation).toUpperCase()}
-              </span>
-
-            </div>
-
-            <div className="mb-10 p-6 rounded-xl border border-indigo-200 bg-white shadow-sm space-y-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                Tabular integrated gradients (live)
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                Train a model on the home page, then paste the same{" "}
-                <strong>session ID</strong> here. Send one{" "}
-                <strong>raw feature row</strong> (same columns as training data,
-                without the label).                 The backend scales it with the training scaler and
-                streams attributions over a WebSocket (
-                <code className="text-xs bg-gray-100 px-1 rounded">/ws/explain/…</code>
-                ). This does not use the image panels below; the Python API must be running
-                (same URL as <code className="text-xs bg-gray-100 px-1">NEXT_PUBLIC_API_URL</code>
-                , default port 8000).
-              </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -587,6 +377,27 @@ export default function ExplainabilityPage() {
               ) : null}
             </div>
 
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              Model Explainability
+            </h2>
+            <div className="flex flex-wrap gap-3 mb-6">
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Dataset Selected: {modelConfig.datasetName || toLabel(modelConfig.dataset)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Model: {toLabel(modelConfig.model)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Regularizer: {toLabel(modelConfig.regularizer)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Optimizer: {toLabel(modelConfig.optimizer)}
+              </span>
+              <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
+                Activation: {toLabel(modelConfig.activation).toUpperCase()}
+              </span>
+            </div>
+
             <>
                 {/* Input controls */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -615,13 +426,11 @@ export default function ExplainabilityPage() {
                 {/* Comparison controls */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <span className="px-3 py-1.5 rounded-full border border-gray-300 bg-white text-sm font-semibold text-gray-800">
-
                     Comparison
                   </span>
                   <span className="text-lg font-semibold text-gray-700">
                     {comparisonCount}
                   </span>
-
                   <button
                     type="button"
                     onClick={() => setComparisonCount((c) => Math.max(1, c - 1))}
@@ -641,18 +450,14 @@ export default function ExplainabilityPage() {
                     +
                   </button>
                 </div>
-
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-
                   {Array.from({ length: comparisonCount }).map((_, i) => (
                     <div
                       key={i}
                       className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
                     >
                       <h4 className="font-semibold text-gray-900 mb-2">
-
                         Explainability {i + 1} (Method {comparisonMethods[i]})
-
                       </h4>
 
                       <div className="flex items-center gap-3 mb-3">
@@ -670,7 +475,7 @@ export default function ExplainabilityPage() {
                           }
                           className="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         >
-                          {["A", "B", "C", "D", "Image IG"].map((method) => (
+                          {["A", "B", "C", "D"].map((method) => (
                             <option key={method} value={method}>
                               {method}
                             </option>
@@ -685,68 +490,20 @@ export default function ExplainabilityPage() {
                         . Randomized Example is currently a placeholder button.
                       </p>
 
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => runImageIntegratedGradientsAtIndex(i)}
-                          className="px-4 py-2 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
-                        >
-                          Run Image IG
-                        </button>
-                        {imageExplainResult[i]?.type === "explain_complete" ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const r = imageExplainResult[i];
-                              if (!r || r.type !== "explain_complete") return;
-                              const willShowOverlay = !showOverlay[i];
-                              setShowOverlay((overlayPrev) => {
-                                const overlayNext = [...overlayPrev];
-                                overlayNext[i] = willShowOverlay;
-                                return overlayNext;
-                              });
-                              setModifiedImages((imgPrev) => {
-                                const imgNext = [...imgPrev];
-                                imgNext[i] = willShowOverlay
-                                  ? `data:image/png;base64,${r.overlay_png_base64}`
-                                  : `data:image/png;base64,${r.raw_heatmap_png_base64}`;
-                                return imgNext;
-                              });
-                            }}
-                            className="px-4 py-2 rounded-lg font-semibold text-gray-900 bg-gray-100 hover:bg-gray-200 border border-gray-300"
-                          >
-                            {showOverlay[i] ? "Show raw heatmap" : "Show overlay"}
-                          </button>
-                        ) : null}
-                        {imageExplainStatus[i] ? (
-                          <span className="text-sm text-gray-700" role="status">
-                            {imageExplainStatus[i]}
-                          </span>
-                        ) : null}
-                      </div>
-                      {imageExplainResult[i] &&
-                      imageExplainResult[i]?.type === "explain_complete" ? (
-                        <div className="mt-2 text-xs text-gray-700">
-                          <span className="font-semibold">Target class:</span>{" "}
-                          {imageExplainResult[i]?.target_class}{" "}
-                          <span className="font-semibold">Top-1:</span>{" "}
-                          {imageExplainResult[i]?.prediction_top1}{" "}
-                          <span className="font-semibold">Steps:</span>{" "}
-                          {imageExplainResult[i]?.m_steps}
-                        </div>
-                      ) : null}
-
                       <div className="mt-4 flex flex-row gap-4 items-start">
                         <div className="space-y-2 flex-1 min-w-0">
                           <label className="block text-sm font-semibold text-gray-700 text-center">
-                            Original
+                            Input Image
                           </label>
                           <input
-                            id={`input-image-file-${i}`}
                             type="file"
                             accept="image/*"
                             onChange={(e) =>
-                              setInputImageAtIndex(i, e.target.files?.[0] || null)
+                              updateImageAtIndex(
+                                setInputImages,
+                                i,
+                                e.target.files?.[0] || null
+                              )
                             }
                             className="w-full text-sm text-gray-700"
                           />
@@ -754,7 +511,7 @@ export default function ExplainabilityPage() {
                             {inputImages[i] ? (
                               <img
                                 src={inputImages[i] as string}
-                                alt={`Original ${i + 1}`}
+                                alt={`Input preview ${i + 1}`}
                                 className="w-full h-full object-contain"
                               />
                             ) : (
@@ -767,18 +524,30 @@ export default function ExplainabilityPage() {
 
                         <div className="space-y-2 flex-1 min-w-0">
                           <label className="block text-sm font-semibold text-gray-700 text-center">
-                            Raw Grad-CAM
+                            Modified / Comparison Image
                           </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              updateImageAtIndex(
+                                setModifiedImages,
+                                i,
+                                e.target.files?.[0] || null
+                              )
+                            }
+                            className="w-full text-sm text-gray-700"
+                          />
                           <div className="h-64 rounded-lg border border-gray-200 bg-sky-50 flex items-center justify-center overflow-hidden">
                             {modifiedImages[i] ? (
                               <img
                                 src={modifiedImages[i] as string}
-                                alt={`Raw heatmap ${i + 1}`}
+                                alt={`Modified preview ${i + 1}`}
                                 className="w-full h-full object-contain"
                               />
                             ) : (
                               <span className="text-sm text-gray-500">
-                                Run Image IG to generate heatmap
+                                No comparison image
                               </span>
                             )}
                           </div>
@@ -787,9 +556,7 @@ export default function ExplainabilityPage() {
                     </div>
                   ))}
                 </div>
-
             </>
-
           </div>
         </div>
       </section>

@@ -15,15 +15,6 @@ from dotenv import load_dotenv
 import threading
 import io
 
-from explainability_ig import integrated_gradients_tabular
-from explainability_ig_image import (
-    decode_image_base64_to_tensor,
-    integrated_gradients_image,
-    build_overlay_png_base64,
-    build_heatmap_png_base64,
-    default_imagenet_model_and_preprocess,
-)
-
 load_dotenv()
 
 app = FastAPI(title="NeuraSect Backend API")
@@ -341,7 +332,6 @@ async def start_training(config: TrainingConfig):
             "status": "initialized",
             "history": [],
             "num_classes": num_classes,
-            "scaler": scaler,
         }
         return TrainingResponse(
             session_id=session_id,
