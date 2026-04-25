@@ -1,4 +1,4 @@
-export function createViz(svg, { nodes = [], edges = [] }) {
+export function createViz(svg, { nodes = [], edges = [] }, d3) {
 
     // Fast lookup table
     const nodeById = new Map(nodes.map(n => [n.id, n]));
@@ -34,15 +34,21 @@ export function createViz(svg, { nodes = [], edges = [] }) {
         .attr("fill", "#000");
     }
 
-    let linkG = svg.append("g").attr("class", "edges");
-    let nodeG = svg.append("g").attr("class", "nodes");
+    let linkG = svg.select("g.edges");
+    if (linkG.empty()) linkG = svg.append("g").attr("class", "edges");
+
+    let nodeG = svg.select("g.nodes");
+    if (nodeG.empty()) nodeG = svg.append("g").attr("class", "nodes");
 
     // Tooltip
-    let tooltip = svg.append("text")
-        .attr("class", "edge-tooltip")
-        .attr("font-size", 12)
-        .attr("fill", "#333")
-        .attr("opacity", 0);
+    let tooltip = svg.select("text.edge-tooltip");
+    if (tooltip.empty()) {
+        tooltip = svg.append("text")
+            .attr("class", "edge-tooltip")
+            .attr("font-size", 12)
+            .attr("fill", "#333")
+            .attr("opacity", 0);
+    }
 
     // ------------------------------------------------------------
     // 5. DRAW + INTERACT WITH edges
@@ -97,7 +103,7 @@ export function createViz(svg, { nodes = [], edges = [] }) {
     // ------------------------------------------------------------
     // 6. EDGE INTERACTIVITY
     // ------------------------------------------------------------
-    d3.selectAll('line')
+    linkG.selectAll('line')
     .on('mouseover', function (event, d) {
         // Highlight hovered edge
         d3.select(this)
@@ -182,6 +188,7 @@ export function createViz(svg, { nodes = [], edges = [] }) {
         .attr('fill', d.fill || 'steelblue')
         .attr('stroke', d.id === selectedId ? 'black' : 'none')
         .attr('stroke-width', d.id === selectedId ? 3 : 0);
+        g.select('text').attr('y', -(d.r || 8) - 6);
     });
 
 }

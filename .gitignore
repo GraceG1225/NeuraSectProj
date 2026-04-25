@@ -1,5 +1,5 @@
 .DS_Store
 neurasect/src/backend/__pycache__/
 venv/
-
 __pycache__/
+.ipynb_checkpoints/
