@@ -54,17 +54,21 @@ class TrainWebSocketHandler:
                         )
 
                     if (epoch + 1) % 5 == 0:
-                        layers = []
+                        dense_layers = [
+                            layer for layer in self.model.layers
+                            if hasattr(layer, "units")
+                        ]
+
+                        input_size = self.model.input_shape[-1]
+                        layers = [input_size] + [layer.units for layer in dense_layers]
                         weights = []
-
-                        dense_layers = [layer for layer in self.model.layers if hasattr(layer, "units")]
-
+                        
                         for layer in dense_layers:
-                            layers.append(layer.units)
+                            layer_weights = layer.get_weights()
+                            if layer_weights:
+                                kernel = layer_weights[0]
+                                weights.append(kernel.tolist())
 
-                        for layer in dense_layers:
-                            kernel = layer.get_weights()[0]
-                            weights.append(kernel.tolist())
                         update["layers"] = layers
                         update["weights"] = weights
 

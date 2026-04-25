@@ -583,7 +583,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   {/* model summary */}
                   {trainingState.modelSummary && (
                     <div className="border-t pt-6">
-                      <h3 className="font-semibold text-gray-900 mb-3">Model Architecture</h3>
+                      <h3 className="font-semibold text-gray-900 mb-3">Model Summary</h3>
                       <pre className="text-xs text-gray-700 overflow-x-auto bg-gray-50 p-4 rounded max-h-48 border border-gray-200">{trainingState.modelSummary}</pre>
                     </div>
                   )}

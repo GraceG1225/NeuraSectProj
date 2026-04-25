@@ -84,7 +84,7 @@ export default function NeuralNetworkGraph({
       style={{ height: 384 }}
     >
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 shrink-0">
-        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-gray-700 tracking-wider">
           Network Architecture
         </span>
 
