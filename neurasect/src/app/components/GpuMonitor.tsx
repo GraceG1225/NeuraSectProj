@@ -20,19 +20,18 @@ export default function GpuMonitor() {
   const [stats, setStats] = useState<GpuStats>({ gpus: [] });
 
   const wsRef = useRef<WebSocket | null>(null);
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
   const connect = () => {
-    if (
-      wsRef.current &&
-      wsRef.current.readyState === WebSocket.OPEN
-    ) return;
+    if (!mountedRef.current) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     const ws = new WebSocket("ws://localhost:8000/ws/gpu");
 
     ws.onmessage = (event) => {
       try {
-        const data: GpuStats = JSON.parse(event.data);
-        setStats(data);
+        setStats(JSON.parse(event.data) as GpuStats);
       } catch {
       }
     };
@@ -43,16 +42,21 @@ export default function GpuMonitor() {
 
     ws.onclose = () => {
       wsRef.current = null;
-      setTimeout(connect, 2000);
+      if (mountedRef.current) {
+        retryRef.current = setTimeout(connect, 2000);
+      }
     };
 
     wsRef.current = ws;
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     connect();
 
     return () => {
+      mountedRef.current = false;
+      if (retryRef.current) clearTimeout(retryRef.current);
       wsRef.current?.close();
       wsRef.current = null;
     };

@@ -3,11 +3,9 @@ import asyncio
 import subprocess
 
 class GPUWebSocketHandler:
-    def __init__(self):
-        self.running = True
-
     async def handle(self, websocket: WebSocket):
         await websocket.accept()
+        running = True
 
         try:
             if not self._has_gpu():
@@ -18,7 +16,7 @@ class GPUWebSocketHandler:
                 await websocket.receive()
                 return
 
-            while self.running:
+            while running:
                 stats = self._get_gpu_metrics()
                 await websocket.send_json(stats)
                 await asyncio.sleep(1)
@@ -33,7 +31,7 @@ class GPUWebSocketHandler:
             except:
                 pass
         finally:
-            self.running = False
+            running = False
             try:
                 await websocket.close()
             except:
