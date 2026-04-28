@@ -1,5 +1,5 @@
 // Renders the text surrounding the pool window
-function label_pool_window(expression, text, x, y) {
+export function label_pool_window(expression, text, x, y) {
     return expression.append("text")
         .attr("class", "pool-label")
         .attr("x", x)
@@ -11,7 +11,7 @@ function label_pool_window(expression, text, x, y) {
 }
 
 // Renders the equal size
-function label_equals(svg, x, y) {
+export function label_equals(svg, x, y) {
   return svg.append("text")
     .attr("class", "equals-label")
     .attr("x", x)
@@ -100,7 +100,7 @@ function render_pool_window(exp, layout) {
  * y: Vertical positioning
  */
 // Renders the full pooling expression centered at (centerX, centerY)
-export function render_pooling_expression(svg, layout, centerX, centerY) {
+export function render_pool_expression(svg, layout, centerX, centerY) {
     const g = svg.append("g")
       .attr("class", "pooling-expression")
       .attr("transform", `translate(${centerX}, ${centerY})`);
@@ -115,6 +115,6 @@ export function render_pooling_expression(svg, layout, centerX, centerY) {
 
     const outputSquare = render_output_square(g, layout.outputSquare.x, layout.outputSquare.y, layout.outputSquare.size);
 
-    return { group: g, poolWindow, outputSquare };
+    return { group: g, window: poolWindow, outputSquare };
 }
 

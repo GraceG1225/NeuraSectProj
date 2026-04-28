@@ -2,10 +2,10 @@
 
 import { render_state } from "./render_state.js";
 import { get_positions } from "./zeroState/layout_state_0.js";
-import { render_pooling_state_2 } from "./twoState/pooling/root_pool.js";
+import { render_interactive_state_2 } from "./twoState/pooling/root_filter_expression.js";
 import { compute_reduced_positions, deep_copy } from "./oneState/layout_state_1.js";
 import { apply_highlight, remove_highlight } from "./zeroState/interactions_pool01.js";
-import { buildConvFilter, buildPoolFilter } from "./twoState/layout_state_2.js";
+import { buildConvFilter, buildPoolFilter, buildInputFilter } from "./twoState/layout_state_2.js";
 
 // GLOBAL VARIABLES
 
@@ -52,6 +52,37 @@ function restore_from_pool2() {
         console.log("Returned to State 1");
     });
 }
+
+function restore_from_conv2() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    // 1. Remove the convolution animation layers
+    svg.select(".output-filter").remove();          // conv output filter
+    svg.select(".conv-expression").remove();        // conv expression window
+    svg.select(".input-filter").remove();           // conv input filter
+
+    // 2. Pop the snapshot of State 1
+    const snapshot = deep_copy(snapshots.pop());
+    console.log("[POP] Stack size:", snapshots.length);
+
+    // 3. Re-render State 1 using the snapshot
+    render_state(
+        svg,
+        snapshot,
+        filter_click_handler,
+        pool_mouseover_handler,
+        pool_mouseleave_handler
+    ).then(() => {
+        // 4. Restore state machine
+        currentPositions = snapshot;
+        state = 1;
+        isTransitioning = false;
+
+        console.log("Returned to State 1 (Conv)");
+    });
+}
+
 
 function restore_from_pool1(event) {
             // ensure click was on background (not on a layer or its children)
@@ -113,7 +144,7 @@ async function render_pool_svg(input, pooling, filterIndex) {
     console.log(recOut);
 
     // 5. Render pooling animation into overlay-content
-    await render_pooling_state_2(recIn, recOut).then(() => {
+    await render_interactive_state_2(recIn, recOut).then(() => {
         isTransitioning = false;
         state = 2;
         currentPositions = none;
@@ -121,6 +152,39 @@ async function render_pool_svg(input, pooling, filterIndex) {
     });
 
 }
+
+async function render_conv_svg(input, conv, filterIndex) {
+    if (isTransitioning) return;
+    isTransitioning = true;
+
+    // Push snapshot
+    snapshots.push(deep_copy(currentPositions));
+    console.log("[PUSH] Stack size:", snapshots.length);
+
+    // Clear screen
+    const none = [];
+    render_state(svg, none);
+
+    console.log(input);
+    console.log(conv);
+
+    // Build input + output filter records
+    const recIn = buildInputFilter(input, filterIndex);
+    const recOut = buildConvFilter(conv, filterIndex); 
+    // ^ You MUST have this. Pooling uses buildPoolFilter, conv uses buildConvOutputFilter.
+
+    console.log(recIn);
+    console.log(recOut);
+
+    // Render convolution animation
+    await render_interactive_state_2(recIn, recOut, conv).then(() => {
+        isTransitioning = false;
+        state = 2;
+        currentPositions = none;
+        console.log("[RC] Promise fulfilled");
+    });
+}
+
 
 // State 0 -> 1 Transition
 function zero_to_one(d) {
@@ -231,6 +295,15 @@ function filter_click_handler(event, d) {
             render_pool_svg(input, pooling, d.filterIndex);
         }
 
+        else if (type == "conv2d") {
+            const input = model.layers[preceding.layerIndex];
+            const conv = model.layers[selected.layerIndex];
+
+            console.log(d);
+            
+            render_conv_svg(input, conv, d.filterIndex);
+        }
+
         else {
             console.log("Later Julian's problem");
         }   
@@ -309,7 +382,7 @@ export function create_conv(svgRef, modelRef, palette) {
         else if (state === 2) {
             
             if (selected.type == "maxpool2d") restore_from_pool2();
-            
+            if (selected.type == "conv2d") restore_from_conv2();
         }
 
     });

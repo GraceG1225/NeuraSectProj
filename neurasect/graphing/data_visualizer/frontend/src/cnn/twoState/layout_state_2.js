@@ -2,6 +2,7 @@ export function buildConvFilter(layer, filterIndex) {
     const activation = layer.activations[filterIndex];   // 2D array (H_out × W_out)
     const [kh, kw, inCh, outCh] = layer.kernel_shape;
     const [H_out, W_out] = layer.output_shape;
+    const [sH, sW] = layer.stride;
 
     return {
         filterIndex,
@@ -10,6 +11,7 @@ export function buildConvFilter(layer, filterIndex) {
         // spatial shape of the output feature map
         shape: [H_out, W_out],
 
+        stride: [sH, sW],
 
         // kernel size
         kernelSize: [kh, kw],
@@ -55,3 +57,18 @@ export function buildPoolFilter(layer, filterIndex) {
     };
 }
 
+export function buildInputFilter(layer, filterIndex) {
+    if (layer.type === "conv2d") {
+        return buildConvFilter(layer, filterIndex);
+    }
+
+    if (layer.type === "maxpool2d") {
+        return buildPoolFilter(layer, filterIndex);
+    }
+
+    if (layer.type === "input") {
+        return buildInputLayerFilter(layer, filterIndex);
+    }
+
+    throw new Error(`Unsupported preceding layer type: ${layer.type}`);
+}

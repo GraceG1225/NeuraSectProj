@@ -11,6 +11,159 @@ import {
     highlight_max_in_pool
  } from "../interactions/interactions_expression_pool.js";
 
+ import { update_conv_window } from "../interactions/interactions_conv.js";
+
+// Pooling hover logic extracted from render_filter
+export const poolHoverHandlers = {
+    mouseover(event, d, ctx) {
+        const {
+            filter,
+            g,
+            outputGroup,
+            poolWindow,
+            outputSquare,
+            stride,
+            poolShape
+        } = ctx;
+
+        const [kRows, kCols] = poolShape;
+        const strideVal = stride;
+
+        // Compute stride-aligned top-left
+        const startRow = Math.floor(d.row / strideVal) * strideVal;
+        const startCol = Math.floor(d.col / strideVal) * strideVal;
+
+        // Check if the window fits inside the input
+        const windowFits =
+            startRow + kRows <= filter.shape[0] &&
+            startCol + kCols <= filter.shape[1];
+
+        if (!windowFits) {
+            clear_output_highlight(outputGroup);
+            clear_kernel_highlight(g);
+            return;
+        }
+
+        // Compute output cell
+        const outRow = Math.floor(startRow / strideVal);
+        const outCol = Math.floor(startCol / strideVal);
+
+        // Collect window values
+        const windowValues = [];
+        for (let r = 0; r < kRows; r++) {
+            for (let c = 0; c < kCols; c++) {
+                const raw = filter.values[startRow + r][startCol + c];
+                const rounded = Math.round(raw * 1000) / 1000;
+                windowValues.push(rounded);
+            }
+        }
+
+        // Update expression window
+        update_pool_window(poolWindow, windowValues);
+
+        // Highlight max
+        const maxVal = highlight_max_in_pool(poolWindow, windowValues);
+
+        // Update output square
+        update_output_square(outputSquare, maxVal);
+
+        // Highlight kernel window + output cell
+        highlight_kernel_window(g, startRow, startCol, poolShape);
+        highlight_output_cell(outputGroup, outRow, outCol);
+    },
+
+    mouseout(event, d, ctx) {
+        const { g, outputGroup } = ctx;
+        clear_kernel_highlight(g);
+        clear_output_highlight(outputGroup);
+    }
+};
+
+export const convHoverHandlers = {
+    mouseover(event, d, ctx) {
+        const {
+            filter,            // input filter
+            g,                 // input filter group
+            outputGroup,       // output filter group
+            exprWindow,        // conv expression window group
+            outputSquare,      // conv expression output square
+            stride,            // stride value
+            kernelSize,        // [kRows, kCols]
+            kernelWeights      // 2D array of kernel weights
+        } = ctx;
+
+        const [kRows, kCols] = kernelSize;
+        const strideVal = stride;
+
+        // Compute stride-aligned top-left of kernel window
+        const startRow = Math.floor(d.row / strideVal) * strideVal;
+        const startCol = Math.floor(d.col / strideVal) * strideVal;
+
+        // Check if the kernel window fits inside the input
+        const windowFits =
+            startRow + kRows <= filter.shape[0] &&
+            startCol + kCols <= filter.shape[1];
+
+        if (!windowFits) {
+            clear_kernel_highlight(g);
+            clear_output_highlight(outputGroup);
+            update_conv_window(exprWindow, [], [], []); // clear expression
+            update_output_square(outputSquare, "");
+            return;
+        }
+
+        // Compute output cell coordinates
+        const outRow = Math.floor(startRow / strideVal);
+        const outCol = Math.floor(startCol / strideVal);
+
+        // Extract activation window + compute products
+        const activations = [];
+        const weights = [];
+        const products = [];
+
+        let sum = 0;
+
+        for (let r = 0; r < kRows; r++) {
+            for (let c = 0; c < kCols; c++) {
+                const act = filter.values[startRow + r][startCol + c];
+                const w = kernelWeights[r][c];
+                const prod = act * w;
+
+                activations.push(Math.round(act * 1000) / 1000);
+                weights.push(Math.round(w * 1000) / 1000);
+                products.push(Math.round(prod * 1000) / 1000);
+
+                sum += prod;
+            }
+        }
+
+        sum = Math.round(sum * 1000) / 1000;
+
+        // Update expression window
+        update_conv_window(exprWindow, activations, weights, products);
+
+        // Update output square
+        update_output_square(outputSquare, sum);
+
+        // Highlight kernel window + output cell
+        highlight_kernel_window(g, startRow, startCol, kernelSize);
+        highlight_output_cell(outputGroup, outRow, outCol);
+    },
+
+    mouseout(event, d, ctx) {
+        const { g, outputGroup, exprWindow, outputSquare } = ctx;
+
+        clear_kernel_highlight(g);
+        clear_output_highlight(outputGroup);
+
+        // Clear expression window
+        update_conv_window(exprWindow, [], [], []);
+        update_output_square(outputSquare, "");
+    }
+};
+
+
+
 /*
  * Renders input and output filters
  * svg: Parent node that filter will be appended to
@@ -42,12 +195,24 @@ function render_filter(svg, filter, layout, {
     classCell = "cell",
     fill = "#e0e0e0",
     stroke = "#999",
+
+    // pooling
     poolShape = null,
     stride = null,
     outputGroup = null,
     poolWindow = null,
-    outputSquare = null
-} = {}) {        
+    outputSquare = null,
+
+    // conv + hover
+    hoverHandlers = null,
+    kernelSize = null,
+    kernelWeights = null,
+    exprWindow = null,
+
+    // NEW
+    info = null
+} = {}) {
+
 
     // Create group
     const g = svg.append("g")
@@ -66,59 +231,61 @@ function render_filter(svg, filter, layout, {
         .attr("height", d => d.height)
         .attr("fill", fill)
         .attr("stroke", stroke)
-        .attr("stroke-width", 0.5)
-        .on("mouseover", (event, d) => {
-            if (className !== "input-filter") return;
+        .attr("stroke-width", 0.5);
 
-            const [kRows, kCols] = poolShape;
-            const strideVal = stride;
+    // Build context object for hover handlers
+    const context = {
+        filter,
+        g,
+        layout,
 
-            // Compute stride-aligned top-left
-            const startRow = Math.floor(d.row / strideVal) * strideVal;
-            const startCol = Math.floor(d.col / strideVal) * strideVal;
+        // pooling
+        outputGroup,
+        poolWindow,
+        outputSquare,
+        stride,
+        poolShape,
 
-            // Check if the window fits inside the input
-            const windowFits =
-                startRow + kRows <= filter.shape[0] &&
-                startCol + kCols <= filter.shape[1];
+        // conv
+        kernelSize,
+        kernelWeights,
+        exprWindow
+    };
 
-            if (!windowFits) {
-                // Hovered cell cannot produce a valid pooling window
-                clear_output_highlight(outputGroup);
-                clear_kernel_highlight(g);
-                return;
-            }
+    console.log("ATTACHING:", hoverHandlers);
 
-            // Compute output cell
-            const outRow = Math.floor(startRow / strideVal);
-            const outCol = Math.floor(startCol / strideVal);
 
-            // Collect window values
-            const windowValues = [];
-            for (let r = 0; r < kRows; r++) {
-                for (let c = 0; c < kCols; c++) {
-                    const raw = filter.values[startRow + r][startCol + c];
-                    const rounded = Math.round(raw * 1000) / 1000;
-                    windowValues.push(rounded);
-                }
-            }
+    // If info object exists, override fields
+    if (info) {
+        if (info.poolSize) context.poolShape = info.poolSize;
+        if (info.kernelSize) context.kernelSize = info.kernelSize;
+        if (info.kernelWeights) context.kernelWeights = info.kernelWeights;
+        if (info.stride) context.stride = info.stride;
 
-            console.log(windowValues);
-            
+        // pooling
+        if (info.expr?.window && info.type === "maxpool2d")
+            context.poolWindow = info.expr.window;
 
-            update_pool_window(poolWindow, windowValues);
-            const maxVal = highlight_max_in_pool(poolWindow, windowValues);
-            update_output_square(outputSquare, maxVal);
+        // convolution
+        if (info.expr?.window && info.type === "conv2d")
+            context.exprWindow = info.expr.window;
 
-            highlight_kernel_window(g, startRow, startCol, poolShape);
-            highlight_output_cell(outputGroup, outRow, outCol);
-        })
-        .on("mouseout", () => {
-        if (className === "input-filter") {
-            clear_kernel_highlight(g);
-            clear_output_highlight(outputGroup);
-        }
-        });
+        if (info.expr?.outputSquare)
+            context.outputSquare = info.expr.outputSquare;
+
+        if (info.outputGroup)
+            context.outputGroup = info.outputGroup;
+    }
+
+    console.log("CONTEXT exprWindow:", context.exprWindow);
+
+
+    // Attach hover handlers if provided
+    if (hoverHandlers && className === "input-filter") {
+        g.selectAll("rect." + classCell)
+            .on("mouseover", (event, d) => hoverHandlers.mouseover(event, d, context))
+            .on("mouseout", (event, d) => hoverHandlers.mouseout(event, d, context));
+    }
 
     return { group: g, layout };
 }

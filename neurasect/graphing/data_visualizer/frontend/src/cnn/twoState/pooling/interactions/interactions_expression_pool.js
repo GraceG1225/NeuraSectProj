@@ -8,6 +8,8 @@ export function highlight_max_in_pool(poolWindow, values) {
   return maxVal;
 }
 
+
+
 export function update_pool_window(poolWindow, values) {
   poolWindow.group.selectAll("rect.pool-cell")
     .data(values)
