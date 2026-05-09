@@ -8,7 +8,7 @@
 
 ---
 
-<p align="center"> This project developed for COMP 490 class, is intended to build an Interactive Neural Network Playground – a tool that will combine a training sandbox with a visualizer to make deep learning more transparent and educational. 
+<p align="center"> This project was developed for a COMP 490 class, is intended to build an Interactive Neural Network Playground – a tool that will combine a training sandbox with a visualizer to make deep learning more transparent and educational. 
     <br> 
 </p>
 
