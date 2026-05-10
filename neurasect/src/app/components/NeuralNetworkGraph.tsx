@@ -1,9 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import * as d3 from "d3";
-import { formatNodes } from "@/graphing/D3NeuralNetTesting/dataFormat/nodeGen";
-import { makeEdgesFromWeights } from "@/graphing/D3NeuralNetTesting/dataFormat/edgeGen";
-import { createViz, type NeuronNode, type NeuronEdge } from "@/graphing/D3NeuralNetTesting/vizualize/viz";
+import { createDense, updateDenseWeights } from "@/graphing/data_visualizer/frontend/public/main.js";
 
 interface NeuralNetworkGraphProps {
   numLayers: number;
@@ -13,6 +11,7 @@ interface NeuralNetworkGraphProps {
   trainingProgress?: { accuracy?: number; val_accuracy?: number }[];
   Layers?: number[];
   Weights?: number[][][];
+  weightEpoch?: number;
 }
 
 function makeSyntheticWeights(layers: number[]): number[][][] {
@@ -39,44 +38,77 @@ export default function NeuralNetworkGraph({
   trainingProgress = [],
   Layers,
   Weights,
+  weightEpoch = 0,
 }: NeuralNetworkGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-
-  const hasRealData =
-    Layers != null &&
-    Weights != null &&
-    Layers.length > 1 &&
-    Weights.length === Layers.length - 1;
-
-  useEffect(() => {
-    if (!svgRef.current) return;
-
-    let layers: number[];
-    let weights: number[][][];
-
-    if (hasRealData) {
-      layers = Layers!;
-      weights = Weights!;
-    } else {
-      const hiddenLayers = Array.from(
-        { length: Math.max(0, numLayers - 1) },
-        () => Math.min(numNeurons, 8)
-      );
-      layers = [
-        Math.min(inputFeatures, 6),
-        ...hiddenLayers,
-        Math.min(outputClasses, 6),
-      ];
-      weights = makeSyntheticWeights(layers);
-    }
-
-    const nodes: NeuronNode[] = formatNodes(layers);
-    const edges: NeuronEdge[] = makeEdgesFromWeights(layers, weights);
-
-    createViz(d3.select(svgRef.current), { nodes, edges }, d3);
-  }, [numLayers, numNeurons, inputFeatures, outputClasses, Layers, Weights, hasRealData]);
+  const denseRef = useRef<any>(null);
+  const layersRef = useRef(Layers);
+  const weightsRef = useRef(Weights);
 
   const latest = trainingProgress[trainingProgress.length - 1];
+  const layersKey = Layers ? Layers.join(",") : `${numLayers}x${numNeurons}`;
+
+  useEffect(() => {
+    layersRef.current = Layers;
+    weightsRef.current = Weights;
+  });
+
+  useEffect(() => {
+    const container = svgRef.current?.parentElement;
+    if (!container) return;
+
+    const render = () => {
+      const svg = svgRef.current;
+      if (!svg) return;
+
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      if (width < 10 || height < 10) return;
+
+      svg.setAttribute("width", String(width));
+      svg.setAttribute("height", String(height));
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      d3.select(svg).selectAll("*").remove();
+      denseRef.current = null;
+
+      const layers = layersRef.current ?? [ inputFeatures, ...Array.from({ length: Math.max(0, numLayers - 1) }, () => Math.min(numNeurons, 8)), outputClasses,];
+
+      const weights = weightsRef.current ?? makeSyntheticWeights(layers);
+
+      const model = {
+        model_name: "dense",
+        layers,
+        weights,
+      };
+
+      denseRef.current = createDense(
+        model,
+        container,
+        { primary: "#0092a5", secondary: "#fb3600" },
+        d3
+      );
+    };
+
+    const init = requestAnimationFrame(render);
+    const observer = new ResizeObserver(render);
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(init);
+      observer.disconnect();
+      denseRef.current = null;
+    };
+  }, [layersKey, inputFeatures, outputClasses, numLayers, numNeurons]);
+
+  useEffect(() => {
+    if (weightEpoch === 0) return;
+
+    const weights = weightsRef.current;
+    if (!weights || !denseRef.current) return;
+
+    updateDenseWeights(denseRef.current, weights);
+  }, [weightEpoch]);
 
   return (
     <div
@@ -108,7 +140,6 @@ export default function NeuralNetworkGraph({
       <div style={{ flex: 1, minHeight: 0 }} className="overflow-hidden">
         <svg
           ref={svgRef}
-          viewBox="0 0 960 500"
           className="w-full h-full"
           preserveAspectRatio="xMidYMid meet"
         />

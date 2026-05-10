@@ -59,6 +59,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     currentEpoch: 0,
     trainingProgress: [] as EpochUpdate[],
     modelSummary: "",
+    weightEpoch: 0,
   });
 
   const [uploadingDataset, setUploadingDataset] = useState(false);
@@ -152,7 +153,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     }
 
     try {
-      setTrainingState((p) => ({ ...p, isTraining: true, trainingProgress: [], currentEpoch: 0 }));
+      setTrainingState((p) => ({ ...p, isTraining: true, trainingProgress: [], currentEpoch: 0, weightEpoch: 0 }));
 
       const config: TrainingConfig = {
         dataset_id: modelConfig.selectedDataset,
@@ -185,6 +186,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               ...p,
               currentEpoch: update.epoch as number,
               trainingProgress: [...p.trainingProgress, update],
+              weightEpoch: update.weights ? p.weightEpoch + 1 : p.weightEpoch,
             }));
           } else if (update.type === "training_complete") {
             setTrainingState((p) => ({ ...p, isTraining: false }));
@@ -553,6 +555,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                     trainingProgress={trainingState.trainingProgress}
                     Layers={latestEpochWithWeights?.layers}
                     Weights={latestEpochWithWeights?.weights}
+                    weightEpoch={trainingState.weightEpoch}
                   />
                   {/* accuracy */}
                   <div className="h-96 bg-white">

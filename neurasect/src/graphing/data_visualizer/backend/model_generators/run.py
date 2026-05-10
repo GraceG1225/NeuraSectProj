@@ -1,0 +1,4 @@
+from model_gen_test import create_test_dense
+from model_gen_test import create_test_conv
+
+create_test_dense()
