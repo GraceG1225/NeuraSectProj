@@ -254,7 +254,6 @@ def load_supabase_dataset(dataset_id: str):
         except Exception:
             le = LabelEncoder()
             y = le.fit_transform(y.astype(str))
-
         unique_values = len(np.unique(y))
         num_classes = unique_values if unique_values < 20 else 1
 
@@ -350,10 +349,8 @@ async def start_training(config: TrainingConfig):
         session_id = f"session_{len(training_sessions)}_{datetime.now().timestamp()}"
         training_sessions[session_id] = {
             "model": model,
-            "X_train": X_train,
-            "X_test": X_test,
-            "y_train": y_train,
-            "y_test": y_test,
+            "X_train": X_train, "X_test": X_test,
+            "y_train": y_train, "y_test": y_test,
             "config": config,
             "status": "initialized",
             "history": [],
@@ -372,6 +369,9 @@ async def start_training(config: TrainingConfig):
         )
     
     except Exception as e:
+        import traceback
+        print(f"\nERROR in start_training:")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws/train/{session_id}")
