@@ -1,3 +1,13 @@
+# VS Code
+.vscode/
+.history/
+
+# MacOS
 .DS_Store
-neurasect/src/backend/__pycache__/
+
+# Python
+__pycache__/
 venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
