@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
-
-
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useTheme } from "../components/theme/themeContext";
 
 const EXPLAINABILITY_CONFIG_KEY = "explainability:modelConfig";
@@ -109,7 +108,6 @@ export default function ExplainabilityPage() {
       });
     };
   }, [inputImages, modifiedImages]);
-
 
   return (
     <div
@@ -274,7 +272,6 @@ export default function ExplainabilityPage() {
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
               Model Explainability
             </h2>
-
             <div className="flex flex-wrap gap-3 mb-6">
               <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
                 Dataset Selected: {modelConfig.datasetName || toLabel(modelConfig.dataset)}
@@ -291,7 +288,6 @@ export default function ExplainabilityPage() {
               <span className="px-4 py-2 rounded bg-sky-300 text-gray-900 font-semibold">
                 Activation: {toLabel(modelConfig.activation).toUpperCase()}
               </span>
-
             </div>
 
             <>
@@ -322,13 +318,11 @@ export default function ExplainabilityPage() {
                 {/* Comparison controls */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
                   <span className="px-3 py-1.5 rounded-full border border-gray-300 bg-white text-sm font-semibold text-gray-800">
-
                     Comparison
                   </span>
                   <span className="text-lg font-semibold text-gray-700">
                     {comparisonCount}
                   </span>
-
                   <button
                     type="button"
                     onClick={() => setComparisonCount((c) => Math.max(1, c - 1))}
@@ -348,18 +342,14 @@ export default function ExplainabilityPage() {
                     +
                   </button>
                 </div>
-
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-
                   {Array.from({ length: comparisonCount }).map((_, i) => (
                     <div
                       key={i}
                       className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
                     >
                       <h4 className="font-semibold text-gray-900 mb-2">
-
                         Explainability {i + 1} (Method {comparisonMethods[i]})
-
                       </h4>
 
                       <div className="flex items-center gap-3 mb-3">
@@ -458,9 +448,7 @@ export default function ExplainabilityPage() {
                     </div>
                   ))}
                 </div>
-
             </>
-
           </div>
         </div>
       </section>

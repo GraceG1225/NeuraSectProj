@@ -5,7 +5,7 @@ export interface TrainingConfig {
   model_type: string;
   data_preprocessing?: string;
   num_layers: number;
-  num_neurons: number;
+  num_neurons: number[];
   learning_rate: number;
   regularization_rate: number;
   train_test_split: number;
@@ -38,6 +38,34 @@ export interface EpochUpdate {
   message?: string;
   final_metrics?: any;
   epochs?: number;
+  layers?: number[];
+  weights?: number[][][];
+}
+
+export interface UploadResponse {
+  dataset_id: string;
+  message: string;
+  shape: number[];
+  num_classes: number;
+}
+
+export async function uploadDataset(file: File): Promise<UploadResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/api/upload/dataset`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to upload dataset');
+  }
+
+  const data = await response.json();
+  console.log('Dataset uploaded successfully:', data);
+  return data;
 }
 
 export interface UploadResponse {
@@ -137,7 +165,7 @@ export async function deleteSession(sessionId: string) {
   const response = await fetch(`${API_BASE_URL}/api/train/${sessionId}`, {
     method: 'DELETE',
   });
-
+  
   if (!response.ok) {
     throw new Error('Failed to delete session');
   }

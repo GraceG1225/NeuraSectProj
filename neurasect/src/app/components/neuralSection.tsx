@@ -5,6 +5,8 @@ import { saveFile, getAllFiles, deleteFile } from "../lib/indexedDBHelpers";
 import { startTraining, connectTrainingWebSocket, uploadDataset, TrainingConfig, EpochUpdate } from "../api/trainingApi";
 import { AccuracyChart } from "./accuracyChart";
 import { InlineBanner, Banner } from "../components/InlineBanner";
+import GpuMonitor from "../components/GpuMonitor";
+import NeuralNetworkGraph from "./NeuralNetworkGraph";
 
 interface Dataset {
   id: string;
@@ -51,13 +53,13 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     models: [] as any[],
   });
 
-
   const [trainingState, setTrainingState] = useState({
     isTraining: false,
     sessionId: null as string | null,
     currentEpoch: 0,
     trainingProgress: [] as EpochUpdate[],
     modelSummary: "",
+    weightEpoch: 0,
   });
 
   const [uploadingDataset, setUploadingDataset] = useState(false);
@@ -84,7 +86,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     refreshLocalFiles();
     return () => { if (wsRef.current) wsRef.current.close(); };
   }, []);
-
 
   const formatNumber = (num: number) => {
     if (num < 0.001) return num.toFixed(4);
@@ -152,15 +153,14 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     }
 
     try {
-      setTrainingState((p) => ({ ...p, isTraining: true, trainingProgress: [], currentEpoch: 0 }));
+      setTrainingState((p) => ({ ...p, isTraining: true, trainingProgress: [], currentEpoch: 0, weightEpoch: 0 }));
 
       const config: TrainingConfig = {
-
         dataset_id: modelConfig.selectedDataset,
         model_type: modelConfig.selectedModel,
         data_preprocessing: modelConfig.selectedDataPreprocessing,
         num_layers: hyperparameters.numLayers,
-        num_neurons: hyperparameters.numNeurons,
+        num_neurons: Array.from({ length: hyperparameters.numLayers - 1 }, () => Number(hyperparameters.numNeurons)),
         learning_rate: hyperparameters.learningRate,
         regularization_rate: hyperparameters.regularizationRate,
         train_test_split: hyperparameters.trainTestSplit,
@@ -171,7 +171,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
         weight_init: modelConfig.weightInit,
         batch_size: hyperparameters.batchSize,
         epochs: hyperparameters.epochs,
-
       };
 
       const response = await startTraining(config);
@@ -187,6 +186,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
               ...p,
               currentEpoch: update.epoch as number,
               trainingProgress: [...p.trainingProgress, update],
+              weightEpoch: update.weights ? p.weightEpoch + 1 : p.weightEpoch,
             }));
           } else if (update.type === "training_complete") {
             setTrainingState((p) => ({ ...p, isTraining: false }));
@@ -214,6 +214,10 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
     setTrainingState((p) => ({ ...p, isTraining: false }));
     setBanner("training", "warning", "Training stopped.", 0);
   }
+  
+  const latestEpochWithWeights = [...trainingState.trainingProgress]
+    .reverse()
+    .find((e) => e.layers && e.weights);
 
   return (
     <section className="py-20 bg-gray-50">
@@ -225,7 +229,8 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
           </p>
         </div>
 
-
+      <GpuMonitor />
+      
         <div className="w-full max-w-6xl mx-auto">
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             {/* tab navigation */}
@@ -254,7 +259,6 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 )}
               </button>
             </div>
-
 
             {/* tabs */}
             <div className="p-8">
@@ -415,9 +419,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                       <div>
                         <label className="label-input">Neurons</label>
                         <div className="flex items-center gap-2">
-
                           <button onClick={() => setHyperparameters((p) => ({ ...p, numNeurons: decrement(p.numNeurons) }))} className="flex-1 px-2 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-semibold text-gray-900" disabled={trainingState.isTraining}>&minus;</button>
-
                           <span className="flex-1 text-center font-semibold text-gray-700">{hyperparameters.numNeurons}</span>
                           <button onClick={() => setHyperparameters((p) => ({ ...p, numNeurons: increment(p.numNeurons) }))} className="flex-1 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-sm font-semibold" disabled={trainingState.isTraining}>+</button>
                         </div>
@@ -547,10 +549,14 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                 <div className="space-y-6">
                   {/* graphs */}
                   <InlineBanner banner={banners.training} onDismiss={() => dismissBanner("training")} />
-                  <div className="h-96 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-4 flex flex-col items-center justify-center">
-                    <p className="text-gray-500 font-semibold mb-2">Graph</p>
-                    <p className="text-sm text-gray-400">Coming soon</p>
-                  </div>
+                  <NeuralNetworkGraph
+                    numLayers={hyperparameters.numLayers}
+                    numNeurons={hyperparameters.numNeurons}
+                    trainingProgress={trainingState.trainingProgress}
+                    Layers={latestEpochWithWeights?.layers}
+                    Weights={latestEpochWithWeights?.weights}
+                    weightEpoch={trainingState.weightEpoch}
+                  />
                   {/* accuracy */}
                   <div className="h-96 bg-white">
                     <AccuracyChart trainingProgress={trainingState.trainingProgress} isTraining={trainingState.isTraining} />
@@ -580,7 +586,7 @@ export default function NeuralSection({ datasets }: NeuralSectionProps) {
                   {/* model summary */}
                   {trainingState.modelSummary && (
                     <div className="border-t pt-6">
-                      <h3 className="font-semibold text-gray-900 mb-3">Model Architecture</h3>
+                      <h3 className="font-semibold text-gray-900 mb-3">Model Summary</h3>
                       <pre className="text-xs text-gray-700 overflow-x-auto bg-gray-50 p-4 rounded max-h-48 border border-gray-200">{trainingState.modelSummary}</pre>
                     </div>
                   )}
