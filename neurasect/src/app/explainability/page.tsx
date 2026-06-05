@@ -1,7 +1,11 @@
 "use client";
+
+import { useState, useEffect, Dispatch, SetStateAction, useRef } from "react";
 import Link from "next/link";
-
-
+import {
+  connectExplainabilityWebSocket,
+  type ExplainabilityWsMessage,
+} from "../api/trainingApi";
 import { useTheme } from "../components/theme/themeContext";
 
 const EXPLAINABILITY_CONFIG_KEY = "explainability:modelConfig";
@@ -53,6 +57,12 @@ export default function ExplainabilityPage() {
     null,
   ]);
   const [modelConfig, setModelConfig] = useState<ModelConfig>(DEFAULT_MODEL_CONFIG);
+  const [featureRowInput, setFeatureRowInput] = useState("5.1,3.5,1.4,0.2");
+  const [explainStatus, setExplainStatus] = useState<string | null>(null);
+  const [explainResult, setExplainResult] = useState<ExplainabilityWsMessage | null>(
+    null
+  );
+  const explainWsRef = useRef<WebSocket | null>(null);
 
   const updateImageAtIndex = (
     setter: Dispatch<SetStateAction<(string | null)[]>>,
@@ -96,6 +106,24 @@ export default function ExplainabilityPage() {
     return () => {
       window.removeEventListener("storage", loadConfig);
       window.removeEventListener("explainability-config-updated", loadConfig);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem("neurasect:lastTrainingSessionId");
+      if (last) {
+        setSelectedId((prev) => (prev.trim() ? prev : last));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      explainWsRef.current?.close();
+      explainWsRef.current = null;
     };
   }, []);
 
@@ -292,6 +320,129 @@ export default function ExplainabilityPage() {
                 Activation: {toLabel(modelConfig.activation).toUpperCase()}
               </span>
 
+            </div>
+
+            <div className="mb-10 p-6 rounded-xl border border-indigo-200 bg-white shadow-sm space-y-4">
+              <h3 className="text-xl font-bold text-gray-900">
+                Tabular integrated gradients (live)
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                Train a model on the home page, then paste the same{" "}
+                <strong>session ID</strong> here. Send one{" "}
+                <strong>raw feature row</strong> (same columns as training data,
+                without the label).                 The backend scales it with the training scaler and
+                streams attributions over a WebSocket (
+                <code className="text-xs bg-gray-100 px-1 rounded">/ws/explain/…</code>
+                ). This does not use the image panels below; the Python API must be running
+                (same URL as <code className="text-xs bg-gray-100 px-1">NEXT_PUBLIC_API_URL</code>
+                , default port 8000).
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <div className="flex-1 min-w-0">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Session ID
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedId}
+                    onChange={(e) => setSelectedId(e.target.value)}
+                    placeholder="session_0_…"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                </div>
+                <div className="flex-[2] min-w-0">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Feature row (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={featureRowInput}
+                    onChange={(e) => setFeatureRowInput(e.target.value)}
+                    placeholder="e.g. Iris: 5.1,3.5,1.4,0.2"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sid = selectedId.trim();
+                    if (!sid) {
+                      setExplainStatus("Enter a training session ID.");
+                      setExplainResult(null);
+                      return;
+                    }
+                    const row = featureRowInput
+                      .split(",")
+                      .map((s) => parseFloat(s.trim()))
+                      .filter((n) => !Number.isNaN(n));
+                    if (row.length === 0) {
+                      setExplainStatus("Enter comma-separated numbers for one row.");
+                      setExplainResult(null);
+                      return;
+                    }
+                    explainWsRef.current?.close();
+                    setExplainStatus("Connecting…");
+                    setExplainResult(null);
+                    const ws = connectExplainabilityWebSocket(
+                      sid,
+                      (msg: ExplainabilityWsMessage) => {
+                        if (msg.type === "explain_started") {
+                          setExplainStatus(
+                            `Running integrated gradients (${msg.m_steps} steps)…`
+                          );
+                        } else if (msg.type === "explain_complete") {
+                          setExplainResult(msg);
+                          setExplainStatus("Done.");
+                        } else if (msg.type === "error") {
+                          setExplainStatus(msg.message);
+                          setExplainResult(null);
+                        }
+                      },
+                      () =>
+                        setExplainStatus((s) =>
+                          s === "Done." ? s : "WebSocket error."
+                        ),
+                      () => {
+                        explainWsRef.current = null;
+                      }
+                    );
+                    explainWsRef.current = ws;
+                    ws.onopen = () => {
+                      ws.send(
+                        JSON.stringify({ feature_row: row, m_steps: 40 })
+                      );
+                    };
+                  }}
+                  className="px-5 py-2.5 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shrink-0"
+                >
+                  Run IG
+                </button>
+              </div>
+              {explainStatus ? (
+                <p className="text-sm text-gray-700" role="status">
+                  {explainStatus}
+                </p>
+              ) : null}
+              {explainResult && explainResult.type === "explain_complete" ? (
+                <div className="text-sm text-gray-800 space-y-2 border-t border-gray-100 pt-4">
+                  <p>
+                    <span className="font-semibold">Prediction: </span>
+                    {explainResult.regression
+                      ? explainResult.prediction
+                      : `class ${explainResult.target_class} (scores: ${JSON.stringify(
+                          explainResult.prediction
+                        )})`}
+                  </p>
+                  <p className="font-semibold">Attributions (per feature, scaled input space):</p>
+                  <ul className="list-disc pl-5 font-mono text-xs break-all">
+                    {explainResult.attributions.map((v, i) => (
+                      <li key={i}>
+                        feature {i}: {v.toFixed(6)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
 
             <>

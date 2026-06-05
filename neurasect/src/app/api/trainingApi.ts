@@ -1,5 +1,16 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+/** WebSocket base: http→ws, https→wss (browser Event in onerror often logs as `{}`). */
+function apiBaseToWebSocketBase(apiBase: string): string {
+  if (apiBase.startsWith('https://')) {
+    return `wss://${apiBase.slice('https://'.length)}`;
+  }
+  if (apiBase.startsWith('http://')) {
+    return `ws://${apiBase.slice('http://'.length)}`;
+  }
+  return apiBase.replace(/^http/, 'ws');
+}
+
 export interface TrainingConfig {
   dataset_id: string;
   model_type: string;
@@ -88,23 +99,79 @@ export function connectTrainingWebSocket(
   onError?: (error: Event) => void,
   onClose?: () => void
 ): WebSocket {
-  const wsUrl = API_BASE_URL.replace('http', 'ws');
-  const ws = new WebSocket(`${wsUrl}/ws/train/${sessionId}`);
+  const wsBase = apiBaseToWebSocketBase(API_BASE_URL);
+  const url = `${wsBase}/ws/train/${encodeURIComponent(sessionId)}`;
+  const ws = new WebSocket(url);
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     onMessage(data);
   };
 
-  ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    if (onError) onError(error);
+  ws.onerror = () => {
+    console.error(
+      'Training WebSocket error (browser hides details). URL:',
+      url,
+      'readyState:',
+      ws.readyState,
+      '— Is the API running? e.g. pip install -r src/backend/requirements.txt then uvicorn from src/backend.'
+    );
+    if (onError) onError(new Event('websocket-error'));
   };
 
   ws.onclose = () => {
     console.log('WebSocket connection closed');
     if (onClose) onClose();
   };
+  return ws;
+}
+
+/** Messages from GET /ws/explain/{sessionId} after the client sends a JSON payload. */
+export type ExplainabilityWsMessage =
+  | { type: 'explain_started'; m_steps: number }
+  | {
+      type: 'explain_complete';
+      regression: boolean;
+      target_class: number | null;
+      prediction: number | number[];
+      attributions: number[];
+      m_steps: number;
+    }
+  | { type: 'error'; message: string };
+
+export function connectExplainabilityWebSocket(
+  sessionId: string,
+  onMessage: (data: ExplainabilityWsMessage) => void,
+  onError?: (error: Event) => void,
+  onClose?: () => void
+): WebSocket {
+  const wsBase = apiBaseToWebSocketBase(API_BASE_URL);
+  const url = `${wsBase}/ws/explain/${encodeURIComponent(sessionId)}`;
+  const ws = new WebSocket(url);
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data) as ExplainabilityWsMessage;
+    onMessage(data);
+  };
+
+  ws.onerror = () => {
+    console.error(
+      'Explainability WebSocket error (browser hides details). URL:',
+      url,
+      'readyState:',
+      ws.readyState,
+      '— Start the FastAPI server on the same host/port as NEXT_PUBLIC_API_URL (default :8000).'
+    );
+    if (onError) onError(new Event('websocket-error'));
+  };
+
+  ws.onclose = (ev) => {
+    if (ev.code !== 1000) {
+      console.warn('Explainability WebSocket closed', 'code:', ev.code, 'reason:', ev.reason || '(none)');
+    }
+    if (onClose) onClose();
+  };
+
   return ws;
 }
 
