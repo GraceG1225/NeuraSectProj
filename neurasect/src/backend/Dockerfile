@@ -14,6 +14,12 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
+
+
+# Create a non-root user for the application
+RUN useradd -m -s /bin/bash appuser
+USER appuser
+
 COPY requirements.txt .
 
 RUN pip3 install --upgrade pip setuptools wheel
